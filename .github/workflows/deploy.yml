@@ -49,7 +49,7 @@ jobs:
       - name: Configure Terraform
         working-directory: terraform
         env:
-          OCI_TENANCY_OCID: ${{ vars.OCI_TENANCY_OCID }}
+          OCI_TENANCY_OCID: ${{ vars.TENANCY_OCID }}
           OCI_USER_OCID: ${{ vars.OCI_USER_OCID }}
           OCI_FINGERPRINT: ${{ vars.OCI_FINGERPRINT }}
           OCI_REGION: ${{ vars.OCI_REGION }}
@@ -68,7 +68,7 @@ jobs:
           
           SUBNET_ID_VAL="${SUBNET_ID:-}"
           cat > terraform.tfvars << EOF
-          tenancy_ocid = "$OCI_TENANCY_OCID"
+          tenancy_ocid = "$TENANCY_OCID"
           compartment_ocid = "$COMPARTMENT_OCID"
           region = "$OCI_REGION"
           subnet_id = "$SUBNET_ID_VAL"

@@ -39,14 +39,18 @@ See [Oracle Docs](https://docs.oracle.com/en-us/iaas/Content/API/Concepts/apisig
 
 #### Get Values
 
-| GitHub Type | Name | Where to Find |
-|-------------|------|----------------|
-| Variable | `OCI_TENANCY_OCID` | Profile → Tenancy → Copy OCID |
-| Variable | `OCI_USER_OCID` | Profile → User Settings → Copy OCID |
-| Variable | `OCI_FINGERPRINT` | Profile → API Keys (shown after adding key) |
-| Secret | `OCI_PRIVATE_KEY` | Content of downloaded private key file |
+After creating the API key, you'll see a config like this:
 
-Note: Only the private key is sensitive. OCIDs and fingerprints are public identifiers.
+```
+[DEFAULT]
+user=ocid1.user.oc1..aaaa...
+fingerprint=aa:bb:cc:...
+tenancy=ocid1.tenancy.oc1..aaaa...
+region=eu-zurich-1
+key_file=<path>
+```
+
+Use these values below. Only the private key is sensitive.
 
 ### Step 4: Configure secrets and variables
 
@@ -62,11 +66,10 @@ In your forked repo:
 
 | Variable | Value |
 |----------|-------|
-| `OCI_TENANCY_OCID` | From Step 3 |
-| `OCI_USER_OCID` | From Step 3 |
-| `OCI_FINGERPRINT` | From Step 3 |
-| `OCI_REGION` | Your home region (e.g., eu-zurich-1) |
-| `TENANCY_OCID` | Same as OCI_TENANCY_OCID |
+| `TENANCY_OCID` | From config (tenancy=) |
+| `OCI_USER_OCID` | From config (user=) |
+| `OCI_FINGERPRINT` | From config (fingerprint=) |
+| `OCI_REGION` | From config (region=) |
 | `SSH_PUBLIC_KEY` | Your SSH public key |
 
 ### Step 5: Deploy!
