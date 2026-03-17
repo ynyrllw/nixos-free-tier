@@ -64,6 +64,18 @@ Output: `result/nixos.qcow2`
 - To change instance shape: modify variables in workflow or terraform
 - To add OCI resources: edit `terraform/main.tf`
 
+## Keeping Docs in Sync
+
+When making changes to variables or workflow, always update:
+- `README.md` - User-facing instructions
+- `terraform/terraform.tfvars.example` - Local development reference
+- Other workflow files if applicable
+
+Check for hardcoded values that should be synced:
+- Default region values
+- Variable names
+- Required vs optional variables
+
 ## Known Issues
 
 - Image import to OCI can take 30-45 minutes

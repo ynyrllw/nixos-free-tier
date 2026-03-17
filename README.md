@@ -2,8 +2,6 @@
 
 Automated deployment of NixOS on Oracle Cloud Infrastructure (OCI) ARM free tier using Terraform and GitHub Actions.
 
-[![Build and Deploy](https://github.com/yourusername/nixos-oracle-free-tier/actions/workflows/deploy.yml/badge.svg)](https://github.com/yourusername/nixos-oracle-free-tier/actions/workflows/deploy.yml)
-
 ## Overview
 
 This repo provides a fully automated way to deploy NixOS on Oracle Cloud's free tier ARM VM (4 OCPUs, 24GB RAM).
@@ -27,22 +25,21 @@ Create a free account at [Oracle Cloud Free Tier](https://signup.cloud.oracle.co
 
 Click "Use this template" above to create your own copy.
 
-### Step 3: Get your OCI values
+### Step 3: Get your values
 
-- **TENANCY_OCID**: Oracle Cloud Console → Profile (top right) → Tenancy: `<your-tenancy>`
+- **TENANCY_OCID**: Oracle Cloud Console → Profile (top right) → Tenancy: `<your-tenancy>` → Copy "OCID"
 - **SSH_PUBLIC_KEY**: Contents of `~/.ssh/id_ed25519.pub` (or create one with `ssh-keygen`)
 
-### Step 4: Configure Oracle Cloud variables
+### Step 4: Configure variables
 
-In your forked repo, go to **Settings → Variables → Actions** and add:
+In your forked repo, go to **Settings → Variables → Actions** and add these two variables:
 
-| Variable | Description | Required | Example |
-|---------|-------------|----------|---------|
-| `TENANCY_OCID` | Oracle Cloud Tenancy OCID | Yes | `ocid1.tenancy.oc1..aaa...` |
-| `SSH_PUBLIC_KEY` | Your SSH public key | Yes | `ssh-ed25519 AAAA...` |
-| `SUBNET_ID` | Public Subnet OCID | No | Auto-detected |
-| `COMPARTMENT_OCID` | Compartment OCID | No | Defaults to tenancy |
-| `REGION` | OCI Region | No | Auto-detected from tenancy |
+| Variable | Value |
+|----------|-------|
+| `TENANCY_OCID` | Your tenancy OCID |
+| `SSH_PUBLIC_KEY` | Your SSH public key |
+
+Everything else (region, subnet, compartment) is auto-detected!
 
 ### Step 5: Deploy!
 
