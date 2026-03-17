@@ -19,15 +19,19 @@ Based on [Erik Parawell's guide](https://erikparawell.com/oracle-cloud-nixos.htm
 
 ## Quick Start (1-Click Deploy)
 
-### Step 1: Fork this repository
+### Step 1: Sign up for Oracle Cloud
+
+Create a free account at [Oracle Cloud Free Tier](https://signup.cloud.oracle.com/?sourceType=_ref_coc-asset-opcSignIn&language=en_US).
+
+### Step 2: Fork this repository
 
 Click "Use this template" above to create your own copy.
 
-### Step 2: Configure Oracle Cloud secrets
+### Step 3: Configure Oracle Cloud variables
 
-In your forked repo, go to **Settings → Secrets and variables → Actions** and add:
+In your forked repo, go to **Settings → Variables → Actions** and add:
 
-| Secret | Description | Example |
+| Variable | Description | Example |
 |--------|-------------|---------|
 | `TENANCY_OCID` | Oracle Cloud Tenancy OCID | `ocid1.tenancy.oc1..aaa...` |
 | `COMPARTMENT_OCID` | Compartment OCID | `ocid1.compartment.oc1..aaa...` |
@@ -36,28 +40,28 @@ In your forked repo, go to **Settings → Secrets and variables → Actions** an
 | `SUBNET_ID` | Public Subnet OCID | `ocid1.subnet.oc1..aaa...` |
 | `SSH_PUBLIC_KEY` | Your SSH public key | `ssh-ed25519 AAAA...` |
 
-### Step 3: Get your OCI values
-
-- **TENANCY_OCID**: Oracle Cloud Console → Profile (top right) → Tenancy: `<your-tenancy>`
-- **COMPARTMENT_OCID**: Usually the same as tenancy or create a new compartment
-- **REGION**: Your home region (e.g., `us-ashburn-1`)
-- **NAMESPACE**: Storage → Buckets → (click your bucket) → "Namespace" field
-- **SUBNET_ID**: Networking → Virtual Cloud Networks → Your VCN → Subnets → Copy a public subnet OCID
-- **SSH_PUBLIC_KEY**: Contents of `~/.ssh/id_ed25519.pub` (or create one with `ssh-keygen`)
-
 ### Step 4: Create an Object Storage bucket
 
 1. Go to **Storage → Buckets**
 2. Create a new bucket (name: `nixos-images`, leave defaults)
 3. Note the Namespace (shown at top of bucket page)
 
-### Step 5: Deploy!
+### Step 5: Get your OCI values
+
+- **TENANCY_OCID**: Oracle Cloud Console → Profile (top right) → Tenancy: `<your-tenancy>`
+- **COMPARTMENT_OCID**: Usually the same as tenancy or create a new compartment
+- **REGION**: Your home region (e.g., `us-ashburn-1`)
+- **NAMESPACE**: Storage → Buckets → Your bucket → "Namespace" field
+- **SUBNET_ID**: Networking → Virtual Cloud Networks → Your VCN → Subnets → Copy a public subnet OCID
+- **SSH_PUBLIC_KEY**: Contents of `~/.ssh/id_ed25519.pub` (or create one with `ssh-keygen`)
+
+### Step 6: Deploy!
 
 Go to **Actions → Build and Deploy NixOS to Oracle Cloud → Run workflow**
 
 Click "Run workflow" - the build will take ~15-20 minutes, then Terraform will deploy your VM.
 
-### Step 6: Connect
+### Step 7: Connect
 
 After deployment completes, the workflow log will show your instance IP:
 ```
