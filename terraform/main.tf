@@ -170,15 +170,3 @@ EOF
 )
   }
 }
-
-output "instance_ip" {
-  value = oci_core_instance.nixos.public_ip
-}
-
-output "instance_id" {
-  value = oci_core_instance.nixos.id
-}
-
-output "image_id" {
-  value = oci_core_image.nixos.id
-}
