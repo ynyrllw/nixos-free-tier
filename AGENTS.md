@@ -14,6 +14,11 @@ The repository is designed to minimize user friction. Users should be able to:
 1. Fork the repo
 2. Add 2 required variables (TENANCY_OCID, SSH_PUBLIC_KEY)
 3. Click deploy
+4. Apply their own NixOS flake after deployment
+
+### Why Pre-built Images?
+
+GitHub's free ARM runners don't support building custom NixOS ARM images (no KVM). Using pre-built images from nix-community solves this. Users apply their own config post-deploy via `nixos-rebuild switch`.
 
 ### Variable Philosophy
 
@@ -39,30 +44,21 @@ When adding new features or variables, prioritize this philosophy:
 
 ## Key Files
 
-- `flake.nix` - NixOS image build definition
-- `nix-image/configuration.nix` - NixOS system configuration
-- `.github/workflows/deploy.yml` - GitHub Actions workflow (build + deploy)
+- `.github/workflows/deploy.yml` - GitHub Actions workflow (downloads pre-built image + deploy)
 - `terraform/` - Terraform configuration for OCI
 
-## Building
+## How It Works
 
-The NixOS image is built using the `oci-image` module:
-```bash
-nix build .#
-```
-Output: `result/nixos.qcow2`
+1. Downloads pre-built NixOS ARM image from nix-community releases
+2. Terraform uploads and imports the image to OCI
+3. Deploys an ARM VM using the imported image
+4. User SSHes in and applies their own flake via `nixos-rebuild switch`
 
 ## Testing Changes
 
-1. Test build locally (requires ARM) or on GitHub Actions
+1. Run the GitHub Actions workflow
 2. Verify Terraform syntax: `cd terraform && terraform validate`
 3. Test deployment to a test compartment first
-
-## Adding Features
-
-- To add NixOS packages: edit `nix-image/configuration.nix`
-- To change instance shape: modify variables in workflow or terraform
-- To add OCI resources: edit `terraform/main.tf`
 
 ## Keeping Docs in Sync
 
@@ -75,9 +71,3 @@ Check for hardcoded values that should be synced:
 - Default region values
 - Variable names
 - Required vs optional variables
-
-## Known Issues
-
-- Image import to OCI can take 30-45 minutes
-- Shape compatibility must be registered for A1.Flex
-- Image capabilities metadata required for ARM instances

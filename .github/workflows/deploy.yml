@@ -16,56 +16,17 @@ jobs:
   build:
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v4
-
-      - uses: cachix/install-nix-action@v26
-        with:
-          install_url: https://nixos.org/nix/install
-          extra_nix_config: |
-            experimental-features = nix-command flakes
-
-      - name: Update SSH key from secrets
+      - name: Download NixOS ARM image
         run: |
-          mkdir -p nix-image
-          cat > nix-image/configuration.nix << 'EOF'
-          { config, pkgs, ... }: {
-            system.stateVersion = "25.05";
-
-            services.openssh = {
-              enable = true;
-              settings = {
-                PasswordAuthentication = false;
-                PermitRootLogin = "no";
-              };
-            };
-
-            services.cloud-init.enable = true;
-
-            networking.firewall = {
-              enable = true;
-              allowedTCPPorts = [ 22 ];
-            };
-
-            users.users.nixos = {
-              isNormalUser = true;
-              extraGroups = [ "wheel" ];
-              openssh.authorizedKeys.keys = [
-                "${{ vars.SSH_PUBLIC_KEY }}"
-              ];
-            };
-
-            security.sudo.wheelNeedsPassword = false;
-          }
-          EOF
-
-      - name: Build NixOS image
-        run: nix build .#packages.aarch64-linux.default
+          curl -L -o nixos.qcow2.gz \
+            https://github.com/nix-community/nixos-images/releases/download/nixos-25.05/nixos-image-aarch64-linux.qcow2.gz
+          gunzip nixos.qcow2.gz
 
       - name: Upload artifact
         uses: actions/upload-artifact@v4
         with:
           name: nixos-qcow2
-          path: result/nixos.qcow2
+          path: nixos.qcow2
           compression-level: 0
 
   deploy:

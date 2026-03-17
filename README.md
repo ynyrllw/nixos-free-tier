@@ -4,18 +4,16 @@ Automated deployment of NixOS on Oracle Cloud Infrastructure (OCI) ARM free tier
 
 ## Overview
 
-This repo provides a fully automated way to deploy NixOS on Oracle Cloud's free tier ARM VM (4 OCPUs, 24GB RAM).
-
-Based on [Erik Parawell's guide](https://erikparawell.com/oracle-cloud-nixos.html) - the automated Terraform approach.
+This repo deploys NixOS to Oracle Cloud's free tier ARM VM (4 OCPUs, 24GB RAM). It uses a pre-built NixOS ARM image to get you started quickly.
 
 ## Features
 
 - **Free**: Runs on Oracle Cloud Always Free tier
-- **Automated**: Build and deploy from GitHub Actions
-- **ARM64**: Uses Oracle's free A1.Flex ARM instance (4 OCPUs, 24GB RAM)
-- **NixOS**: Modern declarative Linux distribution
+- **Automated**: Deploy from GitHub Actions with one click
+- **ARM64**: Oracle's free A1.Flex ARM instance (4 OCPUs, 24GB RAM)
+- **Customizable**: Apply your own NixOS flake after deployment
 
-## Quick Start (1-Click Deploy)
+## Quick Start
 
 ### Step 1: Sign up for Oracle Cloud
 
@@ -27,12 +25,12 @@ Click "Use this template" above to create your own copy.
 
 ### Step 3: Get your values
 
-- **TENANCY_OCID**: Oracle Cloud Console → Profile (top right) → Tenancy: `<your-tenancy>` → Copy "OCID"
-- **SSH_PUBLIC_KEY**: Contents of `~/.ssh/id_ed25519.pub` (or create one with `ssh-keygen`)
+- **TENANCY_OCID**: Oracle Cloud Console → Profile (top right) → Tenancy → Copy OCID
+- **SSH_PUBLIC_KEY**: Contents of `~/.ssh/id_ed25519.pub`
 
 ### Step 4: Configure variables
 
-In your forked repo, go to **Settings → Variables → Actions** and add these two variables:
+In your forked repo, go to **Settings → Variables → Actions** and add:
 
 | Variable | Value |
 |----------|-------|
@@ -45,11 +43,11 @@ Everything else (region, subnet, compartment) is auto-detected!
 
 Go to **Actions → Build and Deploy NixOS to Oracle Cloud → Run workflow**
 
-Click "Run workflow" - the build will take ~15-20 minutes, then Terraform will deploy your VM.
+The build takes ~20-30 minutes, then Terraform deploys your VM.
 
 ### Step 6: Connect
 
-After deployment completes, the workflow log will show your instance IP:
+After deployment, the workflow log shows your instance IP:
 ```
 Instance IP: 123.45.67.89
 ```
@@ -59,79 +57,44 @@ Connect with:
 ssh nixos@<IP>
 ```
 
-## Manual Setup (Local Build)
+## Adding Your Own NixOS Config
 
-If you prefer to build locally:
-
-### Requirements
-
-- [Nix](https://nixos.org/download.html) with flakes enabled
-- [Terraform](https://www.terraform.io/downloads) >= 1.0
-- Oracle Cloud account with free tier
-- SSH key pair
-
-### Build and Deploy
+Once NixOS is running, you can apply your own flake/config:
 
 ```bash
-# Clone
-git clone https://github.com/yourusername/nixos-oracle-free-tier.git
-cd nixos-oracle-free-tier
+# SSH into your VM
+ssh nixos@<IP>
 
-# Add your SSH key to nix-image/configuration.nix
+# Clone your flake
+git clone https://github.com/yourusername/your-nixos-config
+cd your-nixos-config
 
-# Build (requires ARM - use GitHub Actions or ARM machine)
-nix build .#
-
-# Configure Terraform
-cp terraform/terraform.tfvars.example terraform/terraform.tfvars
-# Edit terraform.tfvars with your OCI credentials
-
-# Deploy
-cd terraform && terraform init && terraform apply
+# Apply your config
+sudo nixos-rebuild switch --flake .#your-hostname
 ```
 
-## Configuration Options
+Your NixOS configuration is now applied!
 
-You can customize the deployment via workflow inputs:
+## How It Works
 
-| Input | Default | Description |
-|-------|---------|-------------|
-| ocpus | 4 | Number of OCPUs (1-4 for free tier) |
-| memory_gb | 24 | Memory in GB (6-24 for free tier) |
+1. Downloads a pre-built NixOS ARM image (from nix-community)
+2. Terraform uploads and imports the image to OCI
+3. Deploys an ARM VM using the imported image
+4. You apply your own flake/config post-deploy
 
-## Architecture
+This approach works on GitHub's free ARM runners (which don't support building custom images).
 
-```
-.
-├── flake.nix                    # NixOS image build definition
-├── nix-image/
-│   └── configuration.nix        # NixOS system configuration
-├── terraform/
-│   ├── main.tf                  # Image upload, shape compat, instance
-│   ├── variables.tf             # Variable definitions
-│   └── outputs.tf               # Output definitions
-├── .github/workflows/
-│   └── deploy.yml               # Build + Deploy workflow
-└── Makefile                     # Local development targets
-```
+## Requirements
+
+- Oracle Cloud free tier account
+- GitHub account (for Actions)
+- SSH key pair
 
 ## Troubleshooting
 
-### Shape not compatible error
+**Instance won't deploy:**
+- Check that your tenancy has free ARM capacity in your home region
 
-The workflow includes shape compatibility registration. If you see this error, check the Terraform apply succeeded.
-
-### Instance boots but is unreachable
-
-The workflow configures image capabilities automatically. If issues persist, check the OCI Console for the custom image settings.
-
-### Build fails on x86_64
-
-The build runs on GitHub's ARM64 runners. Local x86_64 builds require QEMU emulation and are very slow.
-
-## Credits
-
-- [Michael Lynch](https://mtlynch.io/nixos-oracle-cloud/) - Original manual guide
-- [Erik Parawell](https://erikparawell.com/oracle-cloud-nixos.html) - Automated Terraform approach
-- [NixOS](https://nixos.org/) - The OS
-- [Oracle Cloud](https://cloud.oracle.com/) - Free tier hosting
+**Can't connect after deploy:**
+- Wait a minute for the instance to fully boot
+- Check the OCI console for instance status
