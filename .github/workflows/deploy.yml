@@ -14,7 +14,7 @@ on:
 
 jobs:
   build:
-    runs-on: ubuntu-24.04-arm
+    runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
 
@@ -23,6 +23,7 @@ jobs:
           install_url: https://nixos.org/nix/install
           extra_nix_config: |
             experimental-features = nix-command flakes
+            boot.binfmt.emulatedSystems = [ "aarch64-linux" ];
 
       - name: Update SSH key from secrets
         run: |

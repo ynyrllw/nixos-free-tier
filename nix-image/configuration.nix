@@ -1,8 +1,6 @@
 { config, pkgs, ... }: {
   system.stateVersion = "25.05";
 
-  virtualisation.kvm = null;
-
   services.openssh = {
     enable = true;
     settings = {
