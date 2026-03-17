@@ -23,7 +23,6 @@ jobs:
           install_url: https://nixos.org/nix/install
           extra_nix_config: |
             experimental-features = nix-command flakes
-            boot.binfmt.emulatedSystems = [ "aarch64-linux" ];
 
       - name: Update SSH key from secrets
         run: |
@@ -31,6 +30,8 @@ jobs:
           cat > nix-image/configuration.nix << 'EOF'
           { config, pkgs, ... }: {
             system.stateVersion = "25.05";
+
+            boot.binfmt.emulatedSystems = [ "aarch64-linux" ];
 
             services.openssh = {
               enable = true;
