@@ -16,11 +16,6 @@ variable "region" {
   default     = "eu-zurich-1"
 }
 
-variable "namespace" {
-  description = "Object Storage Namespace"
-  type        = string
-}
-
 variable "bucket_name" {
   description = "Object Storage Bucket Name for NixOS image"
   type        = string

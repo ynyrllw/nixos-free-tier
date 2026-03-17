@@ -32,7 +32,6 @@ Click "Use this template" above to create your own copy.
 - **TENANCY_OCID**: Oracle Cloud Console → Profile (top right) → Tenancy: `<your-tenancy>`
 - **COMPARTMENT_OCID**: Usually the same as tenancy or create a new compartment
 - **REGION**: Your home region (e.g., `eu-zurich-1`)
-- **NAMESPACE**: Oracle Cloud Console → Profile (top right) → Tenancy: `<your-tenancy>` → scroll down to "Object storage namespace"
 - **SUBNET_ID**: Networking → Virtual Cloud Networks → Your VCN → Subnets → Copy a public subnet OCID
 - **SSH_PUBLIC_KEY**: Contents of `~/.ssh/id_ed25519.pub` (or create one with `ssh-keygen`)
 
@@ -45,7 +44,6 @@ In your forked repo, go to **Settings → Variables → Actions** and add:
 | `TENANCY_OCID` | Oracle Cloud Tenancy OCID | `ocid1.tenancy.oc1..aaa...` |
 | `COMPARTMENT_OCID` | Compartment OCID | `ocid1.compartment.oc1..aaa...` |
 | `REGION` | OCI Region | `eu-zurich-1` |
-| `NAMESPACE` | Object Storage Namespace | (from step 3) |
 | `SUBNET_ID` | Public Subnet OCID | `ocid1.subnet.oc1..aaa...` |
 | `SSH_PUBLIC_KEY` | Your SSH public key | `ssh-ed25519 AAAA...` |
 

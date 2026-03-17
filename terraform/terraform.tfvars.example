@@ -2,8 +2,7 @@
 
 tenancy_ocid     = "ocid1.tenancy.oc1..aaaa..."
 compartment_ocid = "ocid1.compartment.oc1..aaaa..."
-region           = "us-ashburn-1"
-namespace        = "your-namespace"
+region           = "eu-zurich-1"
 bucket_name      = "nixos-images"
 
 # You can find this in Networking > Virtual Cloud Networks > Your VCN > Subnets
