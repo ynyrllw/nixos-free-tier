@@ -159,14 +159,15 @@ resource "oci_core_instance" "nixos" {
 
   metadata = {
     ssh_authorized_keys = var.ssh_public_key
-    user_data           = base64encode(var.cloud_init_user_data != "" ? var.cloud_init_user_data : <<-EOF
+    user_data = base64encode(var.cloud_init_user_data != "" ? var.cloud_init_user_data : <<-EOF
 #cloud-config
 users:
   - name: nixos
     sudo: ALL=(ALL) NOPASSWD:ALL
     ssh-authorized-keys:
       - ${var.ssh_public_key}
-EOF)
+EOF
+)
   }
 }
 
