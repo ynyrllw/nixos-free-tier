@@ -15,9 +15,15 @@ data "oci_objectstorage_namespace" "this" {
   compartment_id = var.tenancy_ocid
 }
 
+resource "oci_objectstorage_bucket" "nixos_bucket" {
+  compartment_id = var.tenancy_ocid
+  namespace      = data.oci_objectstorage_namespace.this.namespace
+  name           = var.bucket_name
+}
+
 data "oci_objectstorage_bucket" "nixos_bucket" {
   namespace = data.oci_objectstorage_namespace.this.namespace
-  name      = var.bucket_name
+  name      = oci_objectstorage_bucket.nixos_bucket.name
 }
 
 data "oci_identity_availability_domains" "ads" {

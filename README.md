@@ -27,22 +27,16 @@ Create a free account at [Oracle Cloud Free Tier](https://signup.cloud.oracle.co
 
 Click "Use this template" above to create your own copy.
 
-### Step 3: Create an Object Storage bucket
-
-1. Go to **Storage → Buckets**
-2. Create a new bucket (name: `nixos-images`, leave defaults)
-3. Note the Namespace (shown at top of bucket page)
-
-### Step 4: Get your OCI values
+### Step 3: Get your OCI values
 
 - **TENANCY_OCID**: Oracle Cloud Console → Profile (top right) → Tenancy: `<your-tenancy>`
 - **COMPARTMENT_OCID**: Usually the same as tenancy or create a new compartment
 - **REGION**: Your home region (e.g., `us-ashburn-1`)
-- **NAMESPACE**: Storage → Buckets → Your bucket → "Namespace" field
+- **NAMESPACE**: Oracle Cloud Console → Profile (top right) → Tenancy: `<your-tenancy>` → scroll down to "Object storage namespace"
 - **SUBNET_ID**: Networking → Virtual Cloud Networks → Your VCN → Subnets → Copy a public subnet OCID
 - **SSH_PUBLIC_KEY**: Contents of `~/.ssh/id_ed25519.pub` (or create one with `ssh-keygen`)
 
-### Step 5: Configure Oracle Cloud variables
+### Step 4: Configure Oracle Cloud variables
 
 In your forked repo, go to **Settings → Variables → Actions** and add:
 
@@ -51,11 +45,11 @@ In your forked repo, go to **Settings → Variables → Actions** and add:
 | `TENANCY_OCID` | Oracle Cloud Tenancy OCID | `ocid1.tenancy.oc1..aaa...` |
 | `COMPARTMENT_OCID` | Compartment OCID | `ocid1.compartment.oc1..aaa...` |
 | `REGION` | OCI Region | `us-ashburn-1` |
-| `NAMESPACE` | Object Storage Namespace | (from step 4) |
+| `NAMESPACE` | Object Storage Namespace | (from step 3) |
 | `SUBNET_ID` | Public Subnet OCID | `ocid1.subnet.oc1..aaa...` |
 | `SSH_PUBLIC_KEY` | Your SSH public key | `ssh-ed25519 AAAA...` |
 
-### Step 6: Deploy!
+### Step 5: Deploy!
 
 Go to **Actions → Build and Deploy NixOS to Oracle Cloud → Run workflow**
 
