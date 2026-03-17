@@ -1,0 +1,38 @@
+name: Destroy NixOS Instance
+
+on:
+  workflow_dispatch:
+
+jobs:
+  destroy:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Setup Terraform
+        uses: hashicorp/setup-terraform@v3
+
+      - name: Configure Terraform
+        working-directory: terraform
+        env:
+          TENANCY_OCID: ${{ secrets.TENANCY_OCID }}
+          COMPARTMENT_OCID: ${{ secrets.COMPARTMENT_OCID }}
+          REGION: ${{ secrets.REGION }}
+          NAMESPACE: ${{ secrets.NAMESPACE }}
+          SUBNET_ID: ${{ secrets.SUBNET_ID }}
+          SSH_PUBLIC_KEY: ${{ secrets.SSH_PUBLIC_KEY }}
+        run: |
+          cat > terraform.tfvars << 'ENDOFFILE'
+          tenancy_ocid = "$TENANCY_OCID"
+          compartment_ocid = "$COMPARTMENT_OCID"
+          region = "$REGION"
+          namespace = "$NAMESPACE"
+          subnet_id = "$SUBNET_ID"
+          ssh_public_key = "$SSH_PUBLIC_KEY"
+          bucket_name = "nixos-images"
+          ENDOFFILE
+          terraform init
+
+      - name: Destroy Terraform
+        working-directory: terraform
+        run: terraform destroy -auto-approve
