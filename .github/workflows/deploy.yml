@@ -49,13 +49,13 @@ jobs:
       - name: Configure Terraform
         working-directory: terraform
         env:
-          OCI_TENANCY_OCID: ${{ vars.TENANCY_OCID }}
+          OCI_TENANCY_OCID: ${{ vars.OCI_TENANCY_OCID }}
           OCI_USER_OCID: ${{ vars.OCI_USER_OCID }}
           OCI_FINGERPRINT: ${{ vars.OCI_FINGERPRINT }}
           OCI_REGION: ${{ vars.OCI_REGION }}
           OCI_PRIVATE_KEY: ${{ secrets.OCI_PRIVATE_KEY }}
           OCI_PRIVATE_KEY_PATH: /tmp/oci_private_key
-          TENANCY_OCID: ${{ vars.TENANCY_OCID }}
+          TENANCY_OCID: ${{ vars.OCI_TENANCY_OCID }}
           COMPARTMENT_OCID: ${{ vars.COMPARTMENT_OCID }}
           SUBNET_ID: ${{ vars.SUBNET_ID }}
           SSH_PUBLIC_KEY: ${{ vars.SSH_PUBLIC_KEY }}
@@ -82,6 +82,8 @@ jobs:
           echo "OCI_TENANCY_OCID is set: ${OCI_TENANCY_OCID:+yes}"
           echo "OCI_USER_OCID is set: ${OCI_USER_OCID:+yes}"
           echo "OCI_REGION is set: ${OCI_REGION:+yes}"
+          echo "OCI_PRIVATE_KEY is set: ${OCI_PRIVATE_KEY:+yes}"
+          echo "OCI_PRIVATE_KEY starts with: ${OCI_PRIVATE_KEY:0:30}"
           
           terraform init
 

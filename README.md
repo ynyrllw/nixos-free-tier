@@ -66,7 +66,7 @@ In your forked repo:
 
 | Variable | Value |
 |----------|-------|
-| `TENANCY_OCID` | From config (tenancy=) |
+| `OCI_TENANCY_OCID` | From config (tenancy=) |
 | `OCI_USER_OCID` | From config (user=) |
 | `OCI_FINGERPRINT` | From config (fingerprint=) |
 | `OCI_REGION` | From config (region=) |
