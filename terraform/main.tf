@@ -8,10 +8,16 @@ terraform {
 }
 
 provider "oci" {
-  region = var.region
+  alias  = "lookup"
+  region = "us-ashburn-1"
+}
+
+provider "oci" {
+  region = data.oci_identity_tenancy.this.home_region
 }
 
 data "oci_identity_tenancy" "this" {
+  provider   = oci.lookup
   tenancy_id = var.tenancy_ocid
 }
 
