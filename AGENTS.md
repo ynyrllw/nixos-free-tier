@@ -12,20 +12,20 @@ This repository automates deployment of NixOS to Oracle Cloud Free Tier (ARM A1.
 
 The repository is designed to minimize user friction. Users should be able to:
 1. Fork the repo
-2. Add 3 required variables (TENANCY_OCID, SUBNET_ID, SSH_PUBLIC_KEY)
+2. Add 2 required variables (TENANCY_OCID, SSH_PUBLIC_KEY)
 3. Click deploy
 
 ### Variable Philosophy
 
 - **Required variables**: Only what cannot be auto-detected or has no sensible default
   - `TENANCY_OCID` - Required to authenticate with OCI
-  - `SUBNET_ID` - User must specify where to deploy the VM
   - `SSH_PUBLIC_KEY` - User needs to provide their key for access
 
 - **Auto-detected variables**: Fetched from OCI API when not provided
   - `REGION` - Auto-detected from tenancy's home region
-  - `NAMESPACE` - Auto-detected from Object Storage API
+  - `SUBNET_ID` - Auto-detected (first public subnet found)
   - `COMPARTMENT_OCID` - Defaults to tenancy_ocid
+  - `NAMESPACE` - Auto-detected from Object Storage API
 
 - **Optional variables with defaults**: Can be customized but work out of the box
   - `ocpus` - Defaults to 4 (max free tier)

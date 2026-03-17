@@ -23,8 +23,9 @@ variable "bucket_name" {
 }
 
 variable "subnet_id" {
-  description = "OCID of the subnet to deploy the instance to"
+  description = "OCID of the subnet to deploy to (auto-detected if empty)"
   type        = string
+  default     = ""
 }
 
 variable "image_source" {

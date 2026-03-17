@@ -22,11 +22,12 @@ jobs:
           SSH_PUBLIC_KEY: ${{ vars.SSH_PUBLIC_KEY }}
         run: |
           REGION_VAL="${REGION:-}"
+          SUBNET_ID_VAL="${SUBNET_ID:-}"
           cat > terraform.tfvars << 'ENDOFFILE'
           tenancy_ocid = "$TENANCY_OCID"
           compartment_ocid = "$COMPARTMENT_OCID"
           region = "$REGION_VAL"
-          subnet_id = "$SUBNET_ID"
+          subnet_id = "$SUBNET_ID_VAL"
           ssh_public_key = "$SSH_PUBLIC_KEY"
           bucket_name = "nixos-images"
           ENDOFFILE

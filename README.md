@@ -30,7 +30,6 @@ Click "Use this template" above to create your own copy.
 ### Step 3: Get your OCI values
 
 - **TENANCY_OCID**: Oracle Cloud Console → Profile (top right) → Tenancy: `<your-tenancy>`
-- **SUBNET_ID**: Networking → Virtual Cloud Networks → Your VCN → Subnets → Copy a public subnet OCID
 - **SSH_PUBLIC_KEY**: Contents of `~/.ssh/id_ed25519.pub` (or create one with `ssh-keygen`)
 
 ### Step 4: Configure Oracle Cloud variables
@@ -40,8 +39,8 @@ In your forked repo, go to **Settings → Variables → Actions** and add:
 | Variable | Description | Required | Example |
 |---------|-------------|----------|---------|
 | `TENANCY_OCID` | Oracle Cloud Tenancy OCID | Yes | `ocid1.tenancy.oc1..aaa...` |
-| `SUBNET_ID` | Public Subnet OCID | Yes | `ocid1.subnet.oc1..aaa...` |
 | `SSH_PUBLIC_KEY` | Your SSH public key | Yes | `ssh-ed25519 AAAA...` |
+| `SUBNET_ID` | Public Subnet OCID | No | Auto-detected |
 | `COMPARTMENT_OCID` | Compartment OCID | No | Defaults to tenancy |
 | `REGION` | OCI Region | No | Auto-detected from tenancy |
 

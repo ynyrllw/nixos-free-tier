@@ -41,8 +41,20 @@ data "oci_identity_availability_domains" "ads" {
   compartment_id = var.compartment_ocid != "" ? var.compartment_ocid : var.tenancy_ocid
 }
 
+data "oci_core_subnets" "all" {
+  compartment_id = var.compartment_ocid != "" ? var.compartment_ocid : var.tenancy_ocid
+}
+
+locals {
+  subnet_id = var.subnet_id != "" ? var.subnet_id : (
+    length([for s in data.oci_core_subnets.all.subnets : s.id if s.prohibit_public_ip_on_vnic == false]) > 0 
+    ? [for s in data.oci_core_subnets.all.subnets : s.id if s.prohibit_public_ip_on_vnic == false][0] 
+    : null
+  )
+}
+
 data "oci_core_subnet" "public" {
-  subnet_id = var.subnet_id
+  subnet_id = var.subnet_id != "" ? var.subnet_id : local.subnet_id
 }
 
 resource "oci_objectstorage_object" "nixos_image" {
