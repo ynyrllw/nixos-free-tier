@@ -6,6 +6,19 @@ Automated deployment of NixOS on Oracle Cloud Infrastructure (OCI) ARM free tier
 
 This repo deploys NixOS to Oracle Cloud's free tier ARM VM (4 OCPUs, 24GB RAM). It uses a pre-built NixOS ARM image to get you started quickly.
 
+## Always Free Resources
+
+Oracle Cloud provides **Always Free** resources that never expire:
+
+| Resource | Limit |
+|----------|-------|
+| **ARM Compute (A1.Flex)** | 3,000 OCPU hours + 18,000 GB hours/month (~4 OCPUs, 24GB continuously) |
+| **VCN** | 2 Virtual Cloud Networks |
+| **Outbound Data Transfer** | 10 TB/month |
+| **Object Storage** | 20 GB total |
+
+This means you can run a 4-core, 24GB ARM VM on Oracle Cloud **completely free**, forever.
+
 ## Features
 
 - **Free**: Runs on Oracle Cloud Always Free tier

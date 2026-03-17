@@ -23,7 +23,7 @@ variable "bucket_name" {
 }
 
 variable "subnet_id" {
-  description = "OCID of the subnet to deploy to (auto-detected if empty)"
+  description = "OCID of existing subnet to deploy to (optional, creates new VCN/subnet if empty)"
   type        = string
   default     = ""
 }

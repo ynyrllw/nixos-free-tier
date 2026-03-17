@@ -54,8 +54,55 @@ data "oci_identity_availability_domains" "ads" {
   compartment_id = var.compartment_ocid != "" ? var.compartment_ocid : var.tenancy_ocid
 }
 
-data "oci_core_subnets" "all" {
+resource "oci_core_vcn" "nixos" {
   compartment_id = var.compartment_ocid != "" ? var.compartment_ocid : var.tenancy_ocid
+  display_name   = "nixos-vcn"
+  cidr_blocks     = ["10.0.0.0/16"]
+}
+
+resource "oci_core_internet_gateway" "nixos" {
+  compartment_id = var.compartment_ocid != "" ? var.compartment_ocid : var.tenancy_ocid
+  display_name   = "nixos-ig"
+  vcn_id         = oci_core_vcn.nixos.id
+}
+
+resource "oci_core_route_table" "nixos" {
+  compartment_id = var.compartment_ocid != "" ? var.compartment_ocid : var.tenancy_ocid
+  display_name   = "nixos-rt"
+  vcn_id         = oci_core_vcn.nixos.id
+
+  route_rules {
+    destination       = "0.0.0.0/0"
+    destination_type  = "CIDR_BLOCK"
+    network_entity_id = oci_core_internet_gateway.nixos.id
+  }
+}
+
+resource "oci_core_security_list" "nixos" {
+  compartment_id = var.compartment_ocid != "" ? var.compartment_ocid : var.tenancy_ocid
+  display_name   = "nixos-sg"
+  vcn_id         = oci_core_vcn.nixos.id
+
+  egress_security_rules {
+    destination       = "0.0.0.0/0"
+    destination_type  = "CIDR_BLOCK"
+    protocol          = "all"
+  }
+
+  ingress_security_rules {
+    protocol  = "all"
+    source    = "0.0.0.0/0"
+  }
+}
+
+resource "oci_core_subnet" "nixos" {
+  compartment_id     = var.compartment_ocid != "" ? var.compartment_ocid : var.tenancy_ocid
+  vcn_id              = oci_core_vcn.nixos.id
+  display_name        = "nixos-subnet"
+  cidr_block          = "10.0.1.0/24"
+  route_table_id      = oci_core_route_table.nixos.id
+  security_list_ids   = [oci_core_security_list.nixos.id]
+  prohibit_public_ip_on_vnic = false
 }
 
 locals {
@@ -67,7 +114,7 @@ locals {
 }
 
 data "oci_core_subnet" "public" {
-  subnet_id = local.subnet_id
+  subnet_id = var.subnet_id != "" ? var.subnet_id : oci_core_subnet.nixos.id
 }
 
 resource "oci_objectstorage_object" "nixos_image" {
