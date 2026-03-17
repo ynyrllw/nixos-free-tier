@@ -59,16 +59,16 @@ jobs:
         run: |
           REGION_VAL="${REGION:-}"
           SUBNET_ID_VAL="${SUBNET_ID:-}"
-          cat > terraform.tfvars << ENDOFFILE
+          cat > terraform.tfvars << EOF
           tenancy_ocid = "$TENANCY_OCID"
           compartment_ocid = "$COMPARTMENT_OCID"
           region = "$REGION_VAL"
           subnet_id = "$SUBNET_ID_VAL"
           ssh_public_key = "$SSH_PUBLIC_KEY"
           bucket_name = "nixos-images"
-          ocpus = $OCPUS
-          memory_in_gbs = $MEMORY_GB
-          ENDOFFILE
+          ocpus = ${OCPUS}
+          memory_in_gbs = ${MEMORY_GB}
+          EOF
           terraform init
 
       - name: Apply Terraform
