@@ -8,7 +8,7 @@
       system = "aarch64-linux";
       modules = [
         "${nixpkgs}/nixos/modules/virtualisation/oci-image.nix"
-        ./configuration.nix
+        ./nix-image/configuration.nix
       ];
     };
 
