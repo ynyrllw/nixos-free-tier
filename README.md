@@ -29,17 +29,26 @@ Click "Use this template" above to create your own copy.
 - **REGION**: Your home region (e.g., `eu-zurich-1`)
 - **SSH_PUBLIC_KEY**: Contents of `~/.ssh/id_ed25519.pub`
 
-### Step 4: Configure variables
+### Step 4: Configure secrets and variables
 
-In your forked repo, go to **Settings → Variables → Actions** and add:
+In your forked repo:
+
+1. Go to **Settings → Secrets → Actions** and add:
+
+| Secret | Description |
+|--------|-------------|
+| `OCI_TENANCY_OCID` | Your tenancy OCID |
+| `OCI_USER_OCID` | Your user OCID (Profile → User Settings → Copy OCID) |
+| `OCI_FINGERPRINT` | API Key fingerprint |
+| `OCI_PRIVATE_KEY` | Private key (paste entire key including -----BEGIN...) |
+
+2. Go to **Settings → Variables → Actions** and add:
 
 | Variable | Value |
 |----------|-------|
 | `TENANCY_OCID` | Your tenancy OCID |
 | `REGION` | Your home region (e.g., eu-zurich-1) |
 | `SSH_PUBLIC_KEY` | Your SSH public key |
-
-Subnet is auto-detected!
 
 ### Step 5: Deploy!
 
