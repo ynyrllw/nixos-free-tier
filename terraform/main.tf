@@ -67,7 +67,7 @@ locals {
 }
 
 data "oci_core_subnet" "public" {
-  subnet_id = var.subnet_id != "" ? var.subnet_id : local.subnet_id
+  subnet_id = local.subnet_id
 }
 
 resource "oci_objectstorage_object" "nixos_image" {

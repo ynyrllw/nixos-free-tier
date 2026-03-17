@@ -31,7 +31,7 @@ variable "subnet_id" {
 variable "image_source" {
   description = "Path to the NixOS qcow2 image"
   type        = string
-  default     = "./result/nixos.qcow2"
+  default     = "./nixos-aarch64.qcow2"
 }
 
 variable "ocpus" {
