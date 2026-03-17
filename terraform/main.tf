@@ -8,7 +8,18 @@ terraform {
 }
 
 provider "oci" {
-  region = var.region
+  region = var.region != "" ? var.region : data.oci_identity_regions.home_region.regions[0].name
+}
+
+data "oci_identity_tenancy" "this" {
+  tenancy_id = var.tenancy_ocid
+}
+
+data "oci_identity_regions" "home_region" {
+  filter {
+    name   = "key"
+    values = [data.oci_identity_tenancy.this.home_region_key]
+  }
 }
 
 data "oci_objectstorage_namespace" "this" {
@@ -27,7 +38,7 @@ data "oci_objectstorage_bucket" "nixos_bucket" {
 }
 
 data "oci_identity_availability_domains" "ads" {
-  compartment_id = var.compartment_ocid
+  compartment_id = var.compartment_ocid != "" ? var.compartment_ocid : var.tenancy_ocid
 }
 
 data "oci_core_subnet" "public" {
@@ -42,7 +53,7 @@ resource "oci_objectstorage_object" "nixos_image" {
 }
 
 resource "oci_core_image" "nixos" {
-  compartment_id = var.compartment_ocid
+  compartment_id = var.compartment_ocid != "" ? var.compartment_ocid : var.tenancy_ocid
   display_name   = "NixOS ARM64"
 
   image_source_details {
@@ -60,7 +71,7 @@ resource "oci_core_image" "nixos" {
 }
 
 resource "oci_core_shape_management" "nixos_a1_compat" {
-  compartment_id = var.compartment_ocid
+  compartment_id = var.compartment_ocid != "" ? var.compartment_ocid : var.tenancy_ocid
   image_id       = oci_core_image.nixos.id
   shape_name     = "VM.Standard.A1.Flex"
 

@@ -5,9 +5,9 @@ variable "tenancy_ocid" {
 }
 
 variable "compartment_ocid" {
-  description = "Oracle Cloud Compartment OCID"
+  description = "Compartment OCID (defaults to tenancy_ocid if empty)"
   type        = string
-  sensitive   = true
+  default     = ""
 }
 
 variable "region" {
