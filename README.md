@@ -23,11 +23,30 @@ Create a free account at [Oracle Cloud Free Tier](https://signup.cloud.oracle.co
 
 Click "Use this template" above to create your own copy.
 
-### Step 3: Get your values
+### Step 3: Oracle Cloud Authentication
 
-- **TENANCY_OCID**: Oracle Cloud Console → Profile (top right) → Tenancy → Copy OCID
-- **REGION**: Your home region (e.g., `eu-zurich-1`)
-- **SSH_PUBLIC_KEY**: Contents of `~/.ssh/id_ed25519.pub`
+To authenticate with Oracle Cloud from GitHub Actions, you need an API key.
+
+#### Create API Key
+
+1. Go to **Profile → User Settings → API Keys**
+2. Click **Add API Key**
+3. Choose **"Generate API Key Pair"**
+4. Click **Download Private Key** and save it
+5. Click **Add** (fingerprint is shown automatically)
+
+See [Oracle Docs](https://docs.oracle.com/en-us/iaas/Content/API/Concepts/apisigningkey.htm) for full details.
+
+#### Get Values
+
+| GitHub Type | Name | Where to Find |
+|-------------|------|----------------|
+| Variable | `OCI_TENANCY_OCID` | Profile → Tenancy → Copy OCID |
+| Variable | `OCI_USER_OCID` | Profile → User Settings → Copy OCID |
+| Variable | `OCI_FINGERPRINT` | Profile → API Keys (shown after adding key) |
+| Secret | `OCI_PRIVATE_KEY` | Content of downloaded private key file |
+
+Note: Only the private key is sensitive. OCIDs and fingerprints are public identifiers.
 
 ### Step 4: Configure secrets and variables
 
@@ -35,19 +54,19 @@ In your forked repo:
 
 1. Go to **Settings → Secrets → Actions** and add:
 
-| Secret | Description |
-|--------|-------------|
-| `OCI_TENANCY_OCID` | Your tenancy OCID |
-| `OCI_USER_OCID` | Your user OCID (Profile → User Settings → Copy OCID) |
-| `OCI_FINGERPRINT` | API Key fingerprint |
-| `OCI_PRIVATE_KEY` | Private key (paste entire key including -----BEGIN...) |
+| Secret | Value |
+|--------|-------|
+| `OCI_PRIVATE_KEY` | Paste entire private key (including -----BEGIN...) |
 
 2. Go to **Settings → Variables → Actions** and add:
 
 | Variable | Value |
 |----------|-------|
-| `TENANCY_OCID` | Your tenancy OCID |
-| `REGION` | Your home region (e.g., eu-zurich-1) |
+| `OCI_TENANCY_OCID` | From Step 3 |
+| `OCI_USER_OCID` | From Step 3 |
+| `OCI_FINGERPRINT` | From Step 3 |
+| `OCI_REGION` | Your home region (e.g., eu-zurich-1) |
+| `TENANCY_OCID` | Same as OCI_TENANCY_OCID |
 | `SSH_PUBLIC_KEY` | Your SSH public key |
 
 ### Step 5: Deploy!

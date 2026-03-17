@@ -49,11 +49,12 @@ jobs:
       - name: Configure Terraform
         working-directory: terraform
         env:
-          OCI_TENANCY_OCID: ${{ secrets.OCI_TENANCY_OCID }}
-          OCI_USER_OCID: ${{ secrets.OCI_USER_OCID }}
-          OCI_FINGERPRINT: ${{ secrets.OCI_FINGERPRINT }}
-          OCI_REGION: ${{ vars.REGION }}
+          OCI_TENANCY_OCID: ${{ vars.OCI_TENANCY_OCID }}
+          OCI_USER_OCID: ${{ vars.OCI_USER_OCID }}
+          OCI_FINGERPRINT: ${{ vars.OCI_FINGERPRINT }}
+          OCI_REGION: ${{ vars.OCI_REGION }}
           OCI_PRIVATE_KEY: ${{ secrets.OCI_PRIVATE_KEY }}
+          OCI_PRIVATE_KEY_PATH: /tmp/oci_private_key
           TENANCY_OCID: ${{ vars.TENANCY_OCID }}
           COMPARTMENT_OCID: ${{ vars.COMPARTMENT_OCID }}
           SUBNET_ID: ${{ vars.SUBNET_ID }}
@@ -61,9 +62,13 @@ jobs:
           OCPUS: ${{ github.event.inputs.ocpus || '4' }}
           MEMORY_GB: ${{ github.event.inputs.memory_gb || '24' }}
         run: |
+          # Write private key to file
+          echo "$OCI_PRIVATE_KEY" > /tmp/oci_private_key
+          chmod 600 /tmp/oci_private_key
+          
           SUBNET_ID_VAL="${SUBNET_ID:-}"
           cat > terraform.tfvars << EOF
-          tenancy_ocid = "$TENANCY_OCID"
+          tenancy_ocid = "$OCI_TENANCY_OCID"
           compartment_ocid = "$COMPARTMENT_OCID"
           region = "$OCI_REGION"
           subnet_id = "$SUBNET_ID_VAL"
@@ -72,6 +77,12 @@ jobs:
           ocpus = ${OCPUS}
           memory_in_gbs = ${MEMORY_GB}
           EOF
+          
+          # Debug: show what vars are set
+          echo "OCI_TENANCY_OCID is set: ${OCI_TENANCY_OCID:+yes}"
+          echo "OCI_USER_OCID is set: ${OCI_USER_OCID:+yes}"
+          echo "OCI_REGION is set: ${OCI_REGION:+yes}"
+          
           terraform init
 
       - name: Apply Terraform
