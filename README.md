@@ -26,6 +26,7 @@ Click "Use this template" above to create your own copy.
 ### Step 3: Get your values
 
 - **TENANCY_OCID**: Oracle Cloud Console → Profile (top right) → Tenancy → Copy OCID
+- **REGION**: Your home region (e.g., `eu-zurich-1`)
 - **SSH_PUBLIC_KEY**: Contents of `~/.ssh/id_ed25519.pub`
 
 ### Step 4: Configure variables
@@ -35,9 +36,10 @@ In your forked repo, go to **Settings → Variables → Actions** and add:
 | Variable | Value |
 |----------|-------|
 | `TENANCY_OCID` | Your tenancy OCID |
+| `REGION` | Your home region (e.g., eu-zurich-1) |
 | `SSH_PUBLIC_KEY` | Your SSH public key |
 
-Region, subnet, and compartment are auto-detected!
+Subnet is auto-detected!
 
 ### Step 5: Deploy!
 

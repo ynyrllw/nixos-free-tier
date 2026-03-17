@@ -51,6 +51,7 @@ jobs:
         env:
           TENANCY_OCID: ${{ vars.TENANCY_OCID }}
           COMPARTMENT_OCID: ${{ vars.COMPARTMENT_OCID }}
+          REGION: ${{ vars.REGION }}
           SUBNET_ID: ${{ vars.SUBNET_ID }}
           SSH_PUBLIC_KEY: ${{ vars.SSH_PUBLIC_KEY }}
           OCPUS: ${{ github.event.inputs.ocpus || '4' }}
@@ -60,6 +61,7 @@ jobs:
           cat > terraform.tfvars << EOF
           tenancy_ocid = "$TENANCY_OCID"
           compartment_ocid = "$COMPARTMENT_OCID"
+          region = "$REGION"
           subnet_id = "$SUBNET_ID_VAL"
           ssh_public_key = "$SSH_PUBLIC_KEY"
           bucket_name = "nixos-images"
