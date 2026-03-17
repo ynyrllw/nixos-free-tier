@@ -1,0 +1,21 @@
+# Copy this file to terraform.tfvars and fill in your values
+
+tenancy_ocid     = "ocid1.tenancy.oc1..aaaa..."
+compartment_ocid = "ocid1.compartment.oc1..aaaa..."
+region           = "us-ashburn-1"
+namespace        = "your-namespace"
+bucket_name      = "nixos-images"
+
+# You can find this in Networking > Virtual Cloud Networks > Your VCN > Subnets
+# Create a public subnet first if you don't have one
+subnet_id = "ocid1.subnet.oc1..aaaa..."
+
+# Your SSH public key (from ~/.ssh/id_ed25519.pub or similar)
+ssh_public_key = "ssh-ed25519 AAAA..."
+
+# Free tier limits: 1-4 OCPUs, 6-24 GB RAM
+ocpus         = 4
+memory_in_gbs = 24
+
+# Optional: cloud-init user data
+# cloud_init_user_data = ""

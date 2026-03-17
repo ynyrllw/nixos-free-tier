@@ -1,0 +1,8 @@
+result/
+.terraform/
+.terraform.lock.hcl
+*.tfstate
+*.tfstate.backup
+*.swp
+*.swo
+*~

@@ -1,0 +1,62 @@
+variable "tenancy_ocid" {
+  description = "Oracle Cloud Tenancy OCID"
+  type        = string
+  sensitive   = true
+}
+
+variable "compartment_ocid" {
+  description = "Oracle Cloud Compartment OCID"
+  type        = string
+  sensitive   = true
+}
+
+variable "region" {
+  description = "Oracle Cloud Region (e.g., us-ashburn-1)"
+  type        = string
+  default     = "us-ashburn-1"
+}
+
+variable "namespace" {
+  description = "Object Storage Namespace"
+  type        = string
+}
+
+variable "bucket_name" {
+  description = "Object Storage Bucket Name for NixOS image"
+  type        = string
+  default     = "nixos-images"
+}
+
+variable "subnet_id" {
+  description = "OCID of the subnet to deploy the instance to"
+  type        = string
+}
+
+variable "image_source" {
+  description = "Path to the NixOS qcow2 image"
+  type        = string
+  default     = "./result/nixos.qcow2"
+}
+
+variable "ocpus" {
+  description = "Number of OCPUs (1-4 for free tier)"
+  type        = number
+  default     = 4
+}
+
+variable "memory_in_gbs" {
+  description = "Memory in GB (6-24 for free tier A1.Flex)"
+  type        = number
+  default     = 24
+}
+
+variable "ssh_public_key" {
+  description = "SSH public key for instance access"
+  type        = string
+}
+
+variable "cloud_init_user_data" {
+  description = "Cloud-init user data (optional)"
+  type        = string
+  default     = ""
+}
