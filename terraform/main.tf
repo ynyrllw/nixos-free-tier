@@ -8,7 +8,27 @@ terraform {
 }
 
 provider "oci" {
-  region = var.region
+  region           = var.region
+  tenancy_ocid     = var.tenancy_ocid
+  user_ocid       = var.user_ocid
+  fingerprint     = var.fingerprint
+  private_key_path = var.private_key_path
+}
+
+variable "user_ocid" {
+  description = "OCI User OCID"
+  type        = string
+}
+
+variable "fingerprint" {
+  description = "API Key Fingerprint"
+  type        = string
+}
+
+variable "private_key_path" {
+  description = "Path to private key"
+  type        = string
+  default     = "/tmp/oci_private_key"
 }
 
 data "oci_identity_tenancy" "this" {
