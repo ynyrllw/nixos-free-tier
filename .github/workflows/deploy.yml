@@ -11,6 +11,9 @@ on:
         description: 'Memory in GB (6-24)'
         required: false
         default: '24'
+  push:
+    branches:
+      - main
 
 jobs:
   build:
