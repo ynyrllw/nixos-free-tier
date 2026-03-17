@@ -11,9 +11,9 @@ variable "compartment_ocid" {
 }
 
 variable "region" {
-  description = "Oracle Cloud Region (e.g., us-ashburn-1)"
+  description = "Oracle Cloud Region (e.g., eu-zurich-1)"
   type        = string
-  default     = "us-ashburn-1"
+  default     = "eu-zurich-1"
 }
 
 variable "namespace" {
