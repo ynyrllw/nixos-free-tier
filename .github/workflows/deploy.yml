@@ -50,7 +50,7 @@ jobs:
               isNormalUser = true;
               extraGroups = [ "wheel" ];
               openssh.authorizedKeys.keys = [
-                "${{ secrets.SSH_PUBLIC_KEY }}"
+                "${{ vars.SSH_PUBLIC_KEY }}"
               ];
             };
 
@@ -89,12 +89,12 @@ jobs:
       - name: Configure Terraform
         working-directory: terraform
         env:
-          TENANCY_OCID: ${{ secrets.TENANCY_OCID }}
-          COMPARTMENT_OCID: ${{ secrets.COMPARTMENT_OCID }}
-          REGION: ${{ secrets.REGION }}
-          NAMESPACE: ${{ secrets.NAMESPACE }}
-          SUBNET_ID: ${{ secrets.SUBNET_ID }}
-          SSH_PUBLIC_KEY: ${{ secrets.SSH_PUBLIC_KEY }}
+          TENANCY_OCID: ${{ vars.TENANCY_OCID }}
+          COMPARTMENT_OCID: ${{ vars.COMPARTMENT_OCID }}
+          REGION: ${{ vars.REGION }}
+          NAMESPACE: ${{ vars.NAMESPACE }}
+          SUBNET_ID: ${{ vars.SUBNET_ID }}
+          SSH_PUBLIC_KEY: ${{ vars.SSH_PUBLIC_KEY }}
           OCPUS: ${{ github.event.inputs.ocpus || '4' }}
           MEMORY_GB: ${{ github.event.inputs.memory_gb || '24' }}
         run: |
