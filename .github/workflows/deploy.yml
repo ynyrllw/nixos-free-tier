@@ -18,9 +18,8 @@ jobs:
     steps:
       - name: Download NixOS ARM image
         run: |
-          curl -L -o nixos.qcow2.gz \
-            https://github.com/nix-community/nixos-images/releases/download/nixos-25.05/nixos-image-aarch64-linux.qcow2.gz
-          gunzip nixos.qcow2.gz
+          curl -L -o nixos.qcow2 \
+            https://github.com/nix-community/nixos-images/releases/download/nixos-25.11/Image-aarch64-linux
 
       - name: Upload artifact
         uses: actions/upload-artifact@v4
