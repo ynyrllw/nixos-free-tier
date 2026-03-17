@@ -13,7 +13,7 @@ provider "oci" {
 }
 
 provider "oci" {
-  region = data.oci_identity_tenancy.this.home_region
+  region = data.oci_identity_tenancy.this.home_region_key
 }
 
 data "oci_identity_tenancy" "this" {
