@@ -8,18 +8,11 @@ terraform {
 }
 
 provider "oci" {
-  region = var.region != "" ? var.region : data.oci_identity_regions.home_region.regions[0].name
+  region = var.region
 }
 
 data "oci_identity_tenancy" "this" {
   tenancy_id = var.tenancy_ocid
-}
-
-data "oci_identity_regions" "home_region" {
-  filter {
-    name   = "key"
-    values = [data.oci_identity_tenancy.this.home_region_key]
-  }
 }
 
 data "oci_objectstorage_namespace" "this" {
