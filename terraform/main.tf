@@ -45,13 +45,6 @@ resource "oci_objectstorage_bucket" "nixos_bucket" {
   name           = var.bucket_name
 }
 
-resource "oci_objectstorage_bucket" "tfstate" {
-  count      = var.create_tfstate_bucket ? 1 : 0
-  compartment_id = var.tenancy_ocid
-  namespace      = data.oci_objectstorage_namespace.this.namespace
-  name           = "${var.bucket_name}-tfstate"
-}
-
 data "oci_objectstorage_bucket" "nixos_bucket" {
   namespace = data.oci_objectstorage_namespace.this.namespace
   name      = oci_objectstorage_bucket.nixos_bucket.name

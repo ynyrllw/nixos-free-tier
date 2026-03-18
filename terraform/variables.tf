@@ -17,15 +17,9 @@ variable "region" {
 }
 
 variable "bucket_name" {
-  description = "Object Storage Bucket Name for NixOS image"
+  description = "Object Storage Bucket Name for NixOS image and state"
   type        = string
   default     = "nixos-images"
-}
-
-variable "create_tfstate_bucket" {
-  description = "Create the Terraform state bucket (set to false after first run)"
-  type        = bool
-  default     = true
 }
 
 variable "subnet_id" {
