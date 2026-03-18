@@ -49,6 +49,11 @@ jobs:
       - name: Setup Terraform
         uses: hashicorp/setup-terraform@v3
 
+      - name: Install OCI CLI
+        run: |
+          curl -s https://raw.githubusercontent.com/oracle/oci-cli/master/scripts/install/install.sh | bash
+          echo "$HOME/bin" >> $GITHUB_PATH
+
       - name: Configure Terraform
         working-directory: terraform
         env:
