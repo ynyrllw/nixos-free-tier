@@ -145,7 +145,7 @@ resource "oci_core_shape_management" "nixos_a1_compat" {
 resource "oci_core_compute_image_capability_schema" "nixos_caps" {
   compartment_id                      = var.compartment_ocid != "" ? var.compartment_ocid : var.tenancy_ocid
   image_id                            = oci_core_image.nixos.id
-  compute_global_image_capability_schema_version_name = "2024-03-27"
+  compute_global_image_capability_schema_version_name = "DEFAULT"
 
   schema_data = {
     "Compute.Firmware" = jsonencode({

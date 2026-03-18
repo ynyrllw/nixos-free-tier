@@ -135,6 +135,34 @@ jobs:
             terraform import 'oci_core_subnet.nixos' "$SUBNET_ID" || true
           fi
           
+          # Import internet gateway
+          IG_ID=$(oci network internet-gateway list --compartment-id "${OCI_TENANCY_OCID}" --vcn-id "$VCN_ID" --display-name "nixos-ig" --query 'data[0].id' --raw-output 2>/dev/null || true)
+          if [ -n "$IG_ID" ]; then
+            echo "Importing existing internet gateway: $IG_ID"
+            terraform import 'oci_core_internet_gateway.nixos' "$IG_ID" || true
+          fi
+          
+          # Import route table
+          RT_ID=$(oci network route-table list --compartment-id "${OCI_TENANCY_OCID}" --vcn-id "$VCN_ID" --display-name "nixos-rt" --query 'data[0].id' --raw-output 2>/dev/null || true)
+          if [ -n "$RT_ID" ]; then
+            echo "Importing existing route table: $RT_ID"
+            terraform import 'oci_core_route_table.nixos' "$RT_ID" || true
+          fi
+          
+          # Import security list
+          SL_ID=$(oci network security-list list --compartment-id "${OCI_TENANCY_OCID}" --vcn-id "$VCN_ID" --display-name "nixos-sg" --query 'data[0].id' --raw-output 2>/dev/null || true)
+          if [ -n "$SL_ID" ]; then
+            echo "Importing existing security list: $SL_ID"
+            terraform import 'oci_core_security_list.nixos' "$SL_ID" || true
+          fi
+          
+          # Import shape management if exists
+          if [ -n "$IMAGE_ID" ]; then
+            SHAPE_ID="c/${OCI_TENANCY_OCID}/i/${IMAGE_ID}/s/VM.Standard.A1.Flex"
+            echo "Importing shape management: $SHAPE_ID"
+            terraform import 'oci_core_shape_management.nixos_a1_compat' "$SHAPE_ID" || true
+          fi
+          
           # Apply remaining changes
           terraform apply -auto-approve
 
