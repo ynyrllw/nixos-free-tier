@@ -5,12 +5,6 @@ terraform {
       version = "~> 6.0"
     }
   }
-
-  backend "oci" {
-    bucket    = "nixos-images"
-    namespace = "zr4kpvluldho"
-    key       = "terraform.tfstate"
-  }
 }
 
 provider "oci" {
