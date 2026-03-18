@@ -88,6 +88,7 @@ jobs:
           bucket_name = "nixos-images"
           ocpus = ${OCPUS}
           memory_in_gbs = ${MEMORY_GB}
+          use_local_state = "false"
           EOF
           
           # Debug: show what vars are set
@@ -97,50 +98,74 @@ jobs:
           echo "OCI_PRIVATE_KEY is set: ${OCI_PRIVATE_KEY:+yes}"
           echo "OCI_PRIVATE_KEY starts with: ${OCI_PRIVATE_KEY:0:30}"
           
-          # Initialize Terraform
-          terraform init
+          # Try to initialize with S3 backend first (if state exists in OCI)
+          echo "Trying to initialize with S3 backend..."
+          export AWS_ACCESS_KEY_ID="$OCI_TENANCY_OCID"
+          export AWS_SECRET_ACCESS_KEY="$OCI_PRIVATE_KEY"
+          terraform init -backend-config="bucket=nixos-images" -backend-config="key=terraform.tfstate" -backend-config="region=$OCI_REGION" -backend-config="endpoint=https://objectstorage.$OCI_REGION.oraclecloud.com" -backend-config="skip_credentials_validation=true" -backend-config="skip_metadata_api_check=true" -backend-config="force_path_style=true" && STATE_EXISTS=true || STATE_EXISTS=false
           
-          # Try to import existing bucket first (since state is ephemeral)
-          BUCKET_OCID=$(oci os bucket get --namespace-name "${OCI_TENANCY_OCID}" --name "nixos-images" --query 'data.id' --raw-output 2>/dev/null || true)
-          if [ -n "$BUCKET_OCID" ]; then
-            echo "Importing existing bucket: $BUCKET_OCID"
-            terraform import 'oci_objectstorage_bucket.nixos_bucket' "$BUCKET_OCID" || true
+          if [ "$STATE_EXISTS" = "false" ]; then
+            echo "No existing state in S3, initializing with local backend first..."
+            # Re-init with local backend
+            rm -rf .terraform*
+            terraform init -backend=false
+            
+            # Import existing resources
+            BUCKET_OCID=$(oci os bucket get --namespace-name "${OCI_TENANCY_OCID}" --name "nixos-images" --query 'data.id' --raw-output 2>/dev/null || true)
+            if [ -n "$BUCKET_OCID" ]; then
+              echo "Importing existing bucket: $BUCKET_OCID"
+              terraform import 'oci_objectstorage_bucket.nixos_bucket' "$BUCKET_OCID" || true
+            fi
+            
+            IMAGE_ID=$(oci compute image list --compartment-id "${OCI_TENANCY_OCID}" --lifecycle-state AVAILABLE --display-name "NixOS ARM64" --query 'data[0].id' --raw-output 2>/dev/null || true)
+            if [ -n "$IMAGE_ID" ]; then
+              echo "Importing existing image: $IMAGE_ID"
+              terraform import 'oci_core_image.nixos' "$IMAGE_ID" || true
+            fi
+            
+            INSTANCE_ID=$(oci compute instance list --compartment-id "${OCI_TENANCY_OCID}" --lifecycle-state RUNNING --display-name "nixos" --query 'data[0].id' --raw-output 2>/dev/null || true)
+            if [ -n "$INSTANCE_ID" ]; then
+              echo "Importing existing instance: $INSTANCE_ID"
+              terraform import 'oci_core_instance.nixos' "$INSTANCE_ID" || true
+            fi
+            
+            VCN_ID=$(oci network vcn list --compartment-id "${OCI_TENANCY_OCID}" --display-name "nixos-vcn" --query 'data[0].id' --raw-output 2>/dev/null || true)
+            if [ -n "$VCN_ID" ]; then
+              echo "Importing existing VCN: $VCN_ID"
+              terraform import 'oci_core_vcn.nixos' "$VCN_ID" || true
+            fi
+            
+            SUBNET_ID=$(oci network subnet list --compartment-id "${OCI_TENANCY_OCID}" --display-name "nixos-subnet" --query 'data[0].id' --raw-output 2>/dev/null || true)
+            if [ -n "$SUBNET_ID" ]; then
+              echo "Importing existing subnet: $SUBNET_ID"
+              terraform import 'oci_core_subnet.nixos' "$SUBNET_ID" || true
+            fi
+            
+            IG_ID=$(oci network internet-gateway list --compartment-id "${OCI_TENANCY_OCID}" --vcn-id "$VCN_ID" --display-name "nixos-ig" --query 'data[0].id' --raw-output 2>/dev/null || true)
+            if [ -n "$IG_ID" ]; then
+              echo "Importing existing internet gateway: $IG_ID"
+              terraform import 'oci_core_internet_gateway.nixos' "$IG_ID" || true
+            fi
+            
+            RT_ID=$(oci network route-table list --compartment-id "${OCI_TENANCY_OCID}" --vcn-id "$VCN_ID" --display-name "nixos-rt" --query 'data[0].id' --raw-output 2>/dev/null || true)
+            if [ -n "$RT_ID" ]; then
+              echo "Importing existing route table: $RT_ID"
+              terraform import 'oci_core_route_table.nixos' "$RT_ID" || true
+            fi
+            
+            SL_ID=$(oci network security-list list --compartment-id "${OCI_TENANCY_OCID}" --vcn-id "$VCN_ID" --display-name "nixos-sg" --query 'data[0].id' --raw-output 2>/dev/null || true)
+            if [ -n "$SL_ID" ]; then
+              echo "Importing existing security list: $SL_ID"
+              terraform import 'oci_core_security_list.nixos' "$SL_ID" || true
+            fi
+            
+            # Migrate to S3 backend
+            echo "Migrating to S3 backend..."
+            terraform init -migrate-state -backend-config="bucket=nixos-images" -backend-config="key=terraform.tfstate" -backend-config="region=$OCI_REGION" -backend-config="endpoint=https://objectstorage.$OCI_REGION.oraclecloud.com" -backend-config="skip_credentials_validation=true" -backend-config="skip_metadata_api_check=true" -backend-config="force_path_style=true"
           fi
           
-          # Target apply the bucket first
-          terraform apply -target oci_objectstorage_bucket.nixos_bucket -auto-approve
-          
-          # Try to import other existing resources
-          IMAGE_ID=$(oci compute image list --compartment-id "${OCI_TENANCY_OCID}" --lifecycle-state AVAILABLE --display-name "NixOS ARM64" --query 'data[0].id' --raw-output 2>/dev/null || true)
-          if [ -n "$IMAGE_ID" ]; then
-            echo "Importing existing image: $IMAGE_ID"
-            terraform import 'oci_core_image.nixos' "$IMAGE_ID" || true
-          fi
-          
-          INSTANCE_ID=$(oci compute instance list --compartment-id "${OCI_TENANCY_OCID}" --lifecycle-state RUNNING --display-name "nixos" --query 'data[0].id' --raw-output 2>/dev/null || true)
-          if [ -n "$INSTANCE_ID" ]; then
-            echo "Importing existing instance: $INSTANCE_ID"
-            terraform import 'oci_core_instance.nixos' "$INSTANCE_ID" || true
-          fi
-          
-          VCN_ID=$(oci network vcn list --compartment-id "${OCI_TENANCY_OCID}" --display-name "nixos-vcn" --query 'data[0].id' --raw-output 2>/dev/null || true)
-          if [ -n "$VCN_ID" ]; then
-            echo "Importing existing VCN: $VCN_ID"
-            terraform import 'oci_core_vcn.nixos' "$VCN_ID" || true
-          fi
-          
-          SUBNET_ID=$(oci network subnet list --compartment-id "${OCI_TENANCY_OCID}" --display-name "nixos-subnet" --query 'data[0].id' --raw-output 2>/dev/null || true)
-          if [ -n "$SUBNET_ID" ]; then
-            echo "Importing existing subnet: $SUBNET_ID"
-            terraform import 'oci_core_subnet.nixos' "$SUBNET_ID" || true
-          fi
-          
-          # Import internet gateway
-          IG_ID=$(oci network internet-gateway list --compartment-id "${OCI_TENANCY_OCID}" --vcn-id "$VCN_ID" --display-name "nixos-ig" --query 'data[0].id' --raw-output 2>/dev/null || true)
-          if [ -n "$IG_ID" ]; then
-            echo "Importing existing internet gateway: $IG_ID"
-            terraform import 'oci_core_internet_gateway.nixos' "$IG_ID" || true
-          fi
+          # Apply changes
+          terraform apply -auto-approve
           
           # Import route table
           RT_ID=$(oci network route-table list --compartment-id "${OCI_TENANCY_OCID}" --vcn-id "$VCN_ID" --display-name "nixos-rt" --query 'data[0].id' --raw-output 2>/dev/null || true)
