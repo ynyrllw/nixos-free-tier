@@ -7,13 +7,13 @@ terraform {
   }
   
   backend "s3" {
-    endpoint                    = "https://objectstorage.${var.region}.oraclecloud.com"
-    region                      = var.region
-    bucket                      = var.bucket_name
+    endpoint                    = "https://objectstorage.eu-zurich-1.oraclecloud.com"
+    region                      = "eu-zurich-1"
+    bucket                      = "nixos-images"
     key                         = "terraform/state"
     skip_credentials_validation = true
     skip_metadata_api_check     = true
-    skip_requesting_account_id = true
+    skip_requesting_account_id  = true
   }
 }
 

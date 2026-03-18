@@ -75,7 +75,7 @@ jobs:
             exit 1
           fi
           
-          # Use fixed bucket name
+          # Use fixed bucket name matching terraform backend
           BUCKET_NAME="nixos-images"
           cat > terraform.tfvars << EOF
           tenancy_ocid = "$OCI_TENANCY_OCID"
