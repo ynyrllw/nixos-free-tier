@@ -16,8 +16,11 @@ Oracle Cloud provides **Always Free** resources that never expire:
 | **VCN** | 2 Virtual Cloud Networks |
 | **Outbound Data Transfer** | 10 TB/month |
 | **Object Storage** | 20 GB total |
+| **Custom Image Storage** | Included in Object Storage limit (NixOS image is ~1GB) |
 
 This means you can run a 4-core, 24GB ARM VM on Oracle Cloud **completely free**, forever.
+
+See [Oracle Cloud Pricing](https://www.oracle.com/cloud/price-list/#compute-image-artifact) for details on custom image storage rates (first 20GB is Always Free).
 
 ## Features
 
