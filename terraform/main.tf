@@ -5,6 +5,16 @@ terraform {
       version = "~> 6.0"
     }
   }
+  
+  backend "s3" {
+    endpoint                    = "https://objectstorage.${var.region}.oraclecloud.com"
+    region                      = var.region
+    bucket                      = var.bucket_name
+    key                         = "terraform/state"
+    skip_credentials_validation = true
+    skip_metadata_api_check     = true
+    skip_requesting_account_id = true
+  }
 }
 
 provider "oci" {

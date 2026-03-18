@@ -75,8 +75,8 @@ jobs:
             exit 1
           fi
           
-          # Use unique bucket name with date
-          BUCKET_NAME="nixos-images-$(date +%Y%m%d)"
+          # Use fixed bucket name
+          BUCKET_NAME="nixos-images"
           cat > terraform.tfvars << EOF
           tenancy_ocid = "$OCI_TENANCY_OCID"
           user_ocid = "$OCI_USER_OCID"
@@ -91,23 +91,20 @@ jobs:
           memory_in_gbs = ${MEMORY_GB}
           EOF
           
+          # Create bucket if it doesn't exist (needed for terraform state backend)
+          echo "Ensuring bucket exists for terraform state..."
+          BUCKET_OCID=$(oci os bucket get --namespace-name "${OCI_TENANCY_OCID}" --name "${BUCKET_NAME}" --query 'data.id' --raw-output 2>/dev/null || true)
+          if [ -z "$BUCKET_OCID" ]; then
+            echo "Creating bucket ${BUCKET_NAME}..."
+            oci os bucket create --namespace-name "${OCI_TENANCY_OCID}" --name "${BUCKET_NAME}" --compartment-id "${OCI_TENANCY_OCID}" 2>/dev/null || true
+            sleep 10
+          fi
+          
           # Initialize Terraform
           terraform init
           
-          # Delete bucket if exists (to avoid conflict), then let TF create it
-          echo "Checking for existing bucket..."
-          oci os bucket get --namespace-name "${OCI_TENANCY_OCID}" --name "${BUCKET_NAME}" --raw-output 2>/dev/null && \
-            (echo "Deleting existing bucket..."; oci os bucket delete --namespace-name "${OCI_TENANCY_OCID}" --name "${BUCKET_NAME}" --force 2>/dev/null || true) || true
-          
-          # Import existing resources if they exist (except bucket - we just deleted it)
+          # Import existing resources if they exist
           echo "Checking for existing resources..."
-          
-          # Bucket
-          BUCKET_OCID=$(oci os bucket get --namespace-name "${OCI_TENANCY_OCID}" --name "${BUCKET_NAME}" --query 'data.id' --raw-output 2>/dev/null || true)
-          if [ -n "$BUCKET_OCID" ]; then
-            echo "Importing bucket: $BUCKET_OCID"
-            terraform import 'oci_objectstorage_bucket.nixos_bucket' "$BUCKET_OCID" || true
-          fi
           
           # Image
           IMAGE_ID=$(oci compute image list --compartment-id "${OCI_TENANCY_OCID}" --lifecycle-state AVAILABLE --display-name "NixOS ARM64" --query 'data[0].id' --raw-output 2>/dev/null || true)
