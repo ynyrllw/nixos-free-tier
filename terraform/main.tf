@@ -5,16 +5,6 @@ terraform {
       version = "~> 6.0"
     }
   }
-  
-  backend "s3" {
-    endpoint                    = "https://objectstorage.eu-zurich-1.oraclecloud.com"
-    region                      = "eu-zurich-1"
-    bucket                      = "nixos-images"
-    key                         = "terraform/state"
-    skip_credentials_validation = true
-    skip_metadata_api_check     = true
-    skip_requesting_account_id  = true
-  }
 }
 
 provider "oci" {
