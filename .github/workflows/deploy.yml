@@ -93,7 +93,12 @@ jobs:
           # Initialize Terraform
           terraform init
           
-          # Import existing resources if they exist
+          # Delete bucket if exists (to avoid conflict), then let TF create it
+          echo "Checking for existing bucket..."
+          oci os bucket get --namespace-name "${OCI_TENANCY_OCID}" --name "nixos-images" --raw-output 2>/dev/null && \
+            (echo "Deleting existing bucket..."; oci os bucket delete --namespace-name "${OCI_TENANCY_OCID}" --name "nixos-images" --force 2>/dev/null || true) || true
+          
+          # Import existing resources if they exist (except bucket - we just deleted it)
           echo "Checking for existing resources..."
           
           # Bucket
