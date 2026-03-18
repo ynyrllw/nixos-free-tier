@@ -116,6 +116,23 @@ jobs:
             terraform import 'oci_core_image.nixos' "$IMAGE_ID" || true
           fi
           
+          # Shape management (if image already has it configured)
+          if [ -n "$IMAGE_ID" ]; then
+            SHAPE_MGMT=$(oci compute shape-management list-image-compatible-shapes --image-id "$IMAGE_ID" --query 'data[0]["shape-name"]' --raw-output 2>/dev/null || true)
+            if [ -n "$SHAPE_MGMT" ]; then
+              terraform import 'oci_core_shape_management.nixos_a1_compat' "c/${OCI_TENANCY_OCID}/i/${IMAGE_ID}/s/VM.Standard.A1.Flex" 2>/dev/null || true
+            fi
+          fi
+          
+          # Image capability schema
+          if [ -n "$IMAGE_ID" ]; then
+            CAPS_SCHEMA_ID=$(oci compute image-capability-schema list --compartment-id "${OCI_TENANCY_OCID}" --image-id "$IMAGE_ID" --query 'data[0].id' --raw-output 2>/dev/null || true)
+            if [ -n "$CAPS_SCHEMA_ID" ]; then
+              echo "Importing image capability schema: $CAPS_SCHEMA_ID"
+              terraform import 'oci_core_compute_image_capability_schema.nixos_caps' "$CAPS_SCHEMA_ID" || true
+            fi
+          fi
+          
           # Instance
           INSTANCE_ID=$(oci compute instance list --compartment-id "${OCI_TENANCY_OCID}" --lifecycle-state RUNNING --display-name "nixos" --query 'data[0].id' --raw-output 2>/dev/null || true)
           if [ -n "$INSTANCE_ID" ]; then
