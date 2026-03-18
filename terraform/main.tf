@@ -39,15 +39,16 @@ data "oci_objectstorage_namespace" "this" {
   compartment_id = var.tenancy_ocid
 }
 
-resource "oci_objectstorage_bucket" "nixos_bucket" {
-  compartment_id = var.tenancy_ocid
-  namespace      = data.oci_objectstorage_namespace.this.namespace
-  name           = var.bucket_name
+resource "oci_objectstorage_object" "nixos_image" {
+  bucket    = var.bucket_name
+  namespace = data.oci_objectstorage_namespace.this.namespace
+  object    = "nixos-aarch64.qcow2"
+  source    = var.image_source
 }
 
 data "oci_objectstorage_bucket" "nixos_bucket" {
   namespace = data.oci_objectstorage_namespace.this.namespace
-  name      = oci_objectstorage_bucket.nixos_bucket.name
+  name      = var.bucket_name
 }
 
 data "oci_identity_availability_domains" "ads" {
@@ -107,13 +108,6 @@ resource "oci_core_subnet" "nixos" {
 
 data "oci_core_subnet" "public" {
   subnet_id = var.subnet_id != "" ? var.subnet_id : oci_core_subnet.nixos.id
-}
-
-resource "oci_objectstorage_object" "nixos_image" {
-  bucket    = data.oci_objectstorage_bucket.nixos_bucket.name
-  namespace = data.oci_objectstorage_namespace.this.namespace
-  object    = "nixos-aarch64.qcow2"
-  source    = var.image_source
 }
 
 resource "oci_core_image" "nixos" {

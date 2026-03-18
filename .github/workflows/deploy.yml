@@ -91,19 +91,17 @@ jobs:
           memory_in_gbs = ${MEMORY_GB}
           EOF
           
-          # Initialize Terraform
-          terraform init
-          
-          # Check if bucket already exists - import instead of creating
-          echo "Checking for existing bucket..."
+          # Create bucket if it doesn't exist (using OCI CLI, not terraform)
+          echo "Ensuring bucket exists..."
           BUCKET_OCID=$(oci os bucket get --namespace-name "${OCI_TENANCY_OCID}" --name "${BUCKET_NAME}" --query 'data.id' --raw-output 2>/dev/null || true)
-          if [ -n "$BUCKET_OCID" ]; then
-            echo "Importing existing bucket: $BUCKET_OCID"
-            terraform import 'oci_objectstorage_bucket.nixos_bucket' "$BUCKET_OCID" || true
+          if [ -z "$BUCKET_OCID" ]; then
+            echo "Creating bucket ${BUCKET_NAME}..."
+            oci os bucket create --namespace-name "${OCI_TENANCY_OCID}" --name "${BUCKET_NAME}" --compartment-id "${OCI_TENANCY_OCID}" 2>/dev/null
+            sleep 10
           fi
           
-          # Import other existing resources if they exist
-          echo "Checking for existing resources..."
+          # Initialize Terraform
+          terraform init
           
           # Image
           IMAGE_ID=$(oci compute image list --compartment-id "${OCI_TENANCY_OCID}" --lifecycle-state AVAILABLE --display-name "NixOS ARM64" --query 'data[0].id' --raw-output 2>/dev/null || true)
