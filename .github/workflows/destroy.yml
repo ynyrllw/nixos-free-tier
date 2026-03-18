@@ -2,6 +2,11 @@ name: Destroy NixOS Instance
 
 on:
   workflow_dispatch:
+    inputs:
+      bucket_name:
+        description: 'Bucket name (e.g., nixos-images-20260318)'
+        required: false
+        default: 'nixos-images'
 
 jobs:
   destroy:
@@ -23,13 +28,14 @@ jobs:
         run: |
           REGION_VAL="${REGION:-}"
           SUBNET_ID_VAL="${SUBNET_ID:-}"
+          BUCKET_NAME="${{ github.event.inputs.bucket_name || 'nixos-images' }}"
           cat > terraform.tfvars << 'ENDOFFILE'
           tenancy_ocid = "$TENANCY_OCID"
           compartment_ocid = "$COMPARTMENT_OCID"
           region = "$REGION_VAL"
           subnet_id = "$SUBNET_ID_VAL"
           ssh_public_key = "$SSH_PUBLIC_KEY"
-          bucket_name = "nixos-images"
+          bucket_name = "$BUCKET_NAME"
           ENDOFFILE
           terraform init
 

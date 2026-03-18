@@ -75,7 +75,8 @@ jobs:
             exit 1
           fi
           
-          SUBNET_ID_VAL="${SUBNET_ID:-}"
+          # Use unique bucket name with date
+          BUCKET_NAME="nixos-images-$(date +%Y%m%d)"
           cat > terraform.tfvars << EOF
           tenancy_ocid = "$OCI_TENANCY_OCID"
           user_ocid = "$OCI_USER_OCID"
@@ -85,7 +86,7 @@ jobs:
           region = "$OCI_REGION"
           subnet_id = "$SUBNET_ID_VAL"
           ssh_public_key = "$SSH_PUBLIC_KEY"
-          bucket_name = "nixos-images"
+          bucket_name = "$BUCKET_NAME"
           ocpus = ${OCPUS}
           memory_in_gbs = ${MEMORY_GB}
           EOF
@@ -95,14 +96,14 @@ jobs:
           
           # Delete bucket if exists (to avoid conflict), then let TF create it
           echo "Checking for existing bucket..."
-          oci os bucket get --namespace-name "${OCI_TENANCY_OCID}" --name "nixos-images" --raw-output 2>/dev/null && \
-            (echo "Deleting existing bucket..."; oci os bucket delete --namespace-name "${OCI_TENANCY_OCID}" --name "nixos-images" --force 2>/dev/null || true) || true
+          oci os bucket get --namespace-name "${OCI_TENANCY_OCID}" --name "${BUCKET_NAME}" --raw-output 2>/dev/null && \
+            (echo "Deleting existing bucket..."; oci os bucket delete --namespace-name "${OCI_TENANCY_OCID}" --name "${BUCKET_NAME}" --force 2>/dev/null || true) || true
           
           # Import existing resources if they exist (except bucket - we just deleted it)
           echo "Checking for existing resources..."
           
           # Bucket
-          BUCKET_OCID=$(oci os bucket get --namespace-name "${OCI_TENANCY_OCID}" --name "nixos-images" --query 'data.id' --raw-output 2>/dev/null || true)
+          BUCKET_OCID=$(oci os bucket get --namespace-name "${OCI_TENANCY_OCID}" --name "${BUCKET_NAME}" --query 'data.id' --raw-output 2>/dev/null || true)
           if [ -n "$BUCKET_OCID" ]; then
             echo "Importing bucket: $BUCKET_OCID"
             terraform import 'oci_objectstorage_bucket.nixos_bucket' "$BUCKET_OCID" || true

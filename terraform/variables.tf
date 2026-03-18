@@ -17,7 +17,7 @@ variable "region" {
 }
 
 variable "bucket_name" {
-  description = "Object Storage Bucket Name for NixOS image and state"
+  description = "Object Storage Bucket Name for NixOS image"
   type        = string
   default     = "nixos-images"
 }
