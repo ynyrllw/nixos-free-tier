@@ -91,7 +91,17 @@ jobs:
           echo "OCI_PRIVATE_KEY is set: ${OCI_PRIVATE_KEY:+yes}"
           echo "OCI_PRIVATE_KEY starts with: ${OCI_PRIVATE_KEY:0:30}"
           
-          terraform init
+          # Initialize without backend to create state bucket first
+          terraform init -backend=false
+          
+          # Create the state bucket
+          terraform apply -target 'oci_objectstorage_bucket.tfstate[0]' -auto-approve || true
+          
+          # Re-initialize with S3 backend and migrate state
+          terraform init -migrate-state -backend-config="hostname=objectstorage.${OCI_REGION}.oraclecloud.com" -backend-config="bucket_name=nixos-images-tfstate" -backend-config="key=nixos-deploy/terraform.tfstate" -backend-config="region=${OCI_REGION}" -backend-config="tenancy_ocid=${OCI_TENANCY_OCID}" -backend-config="user_ocid=${OCI_USER_OCID}" -backend-config="fingerprint=${OCI_FINGERPRINT}" -backend-config="private_key_path=/tmp/oci_private_key"
+          
+          # Now apply everything
+          terraform apply -auto-approve
 
       - name: Apply Terraform
         working-directory: terraform

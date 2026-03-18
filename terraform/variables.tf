@@ -22,6 +22,12 @@ variable "bucket_name" {
   default     = "nixos-images"
 }
 
+variable "create_tfstate_bucket" {
+  description = "Create the Terraform state bucket (set to false after first run)"
+  type        = bool
+  default     = true
+}
+
 variable "subnet_id" {
   description = "OCID of existing subnet to deploy to (optional, creates new VCN/subnet if empty)"
   type        = string

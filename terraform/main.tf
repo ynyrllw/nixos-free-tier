@@ -5,6 +5,17 @@ terraform {
       version = "~> 6.0"
     }
   }
+
+  backend "s3" {
+    hostname     = "objectstorage.${var.region}.oraclecloud.com"
+    bucket_name  = "${var.bucket_name}-tfstate"
+    key          = "nixos-deploy/terraform.tfstate"
+    region       = var.region
+    tenancy_ocid = var.tenancy_ocid
+    user_ocid    = var.user_ocid
+    fingerprint  = var.fingerprint
+    private_key_path = var.private_key_path
+  }
 }
 
 provider "oci" {
@@ -43,6 +54,13 @@ resource "oci_objectstorage_bucket" "nixos_bucket" {
   compartment_id = var.tenancy_ocid
   namespace      = data.oci_objectstorage_namespace.this.namespace
   name           = var.bucket_name
+}
+
+resource "oci_objectstorage_bucket" "tfstate" {
+  count      = var.create_tfstate_bucket ? 1 : 0
+  compartment_id = var.tenancy_ocid
+  namespace      = data.oci_objectstorage_namespace.this.namespace
+  name           = "${var.bucket_name}-tfstate"
 }
 
 data "oci_objectstorage_bucket" "nixos_bucket" {
