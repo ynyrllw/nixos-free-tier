@@ -91,14 +91,12 @@ jobs:
           echo "OCI_PRIVATE_KEY is set: ${OCI_PRIVATE_KEY:+yes}"
           echo "OCI_PRIVATE_KEY starts with: ${OCI_PRIVATE_KEY:0:30}"
           
-          # Try to initialize with S3 backend (if state exists, use it)
-          terraform init -backend-config="hostname=objectstorage.${OCI_REGION}.oraclecloud.com" -backend-config="bucket_name=nixos-images-tfstate" -backend-config="key=nixos-deploy/terraform.tfstate" -backend-config="region=${OCI_REGION}" -backend-config="tenancy_ocid=${OCI_TENANCY_OCID}" -backend-config="user_ocid=${OCI_USER_OCID}" -backend-config="fingerprint=${OCI_FINGERPRINT}" -backend-config="private_key_path=/tmp/oci_private_key" && STATE_EXISTS=true || STATE_EXISTS=false
+          # Initialize Terraform
+          terraform init
           
-          if [ "$STATE_EXISTS" = "false" ]; then
+          # Check if state is empty and try to import existing resources
+          if [ ! -f .terraform/terraform.tfstate ] || [ ! -s .terraform/terraform.tfstate ]; then
             echo "No existing state found, checking for existing resources to import..."
-            
-            # Initialize without backend
-            terraform init -backend=false
             
             # Import existing resources if they exist
             # Try to find and import existing NixOS image
@@ -115,17 +113,20 @@ jobs:
               terraform import 'oci_core_instance.nixos' "$INSTANCE_ID" || true
             fi
             
-            # Create or import state bucket
-            BUCKET_EXISTS=$(oci os bucket get --namespace-name "${OCI_TENANCY_OCID}" --name "nixos-images-tfstate" 2>&1 || echo "NOT_FOUND")
-            if echo "$BUCKET_EXISTS" | grep -q "ocid1\.bucket"; then
-              BUCKET_OCID=$(echo "$BUCKET_EXISTS" | grep -oP 'ocid1\.bucket\.oc1\.[a-z0-9.]+' | head -1)
-              terraform import 'oci_objectstorage_bucket.tfstate[0]' "$BUCKET_OCID" || true
-            else
-              terraform apply -target 'oci_objectstorage_bucket.tfstate[0]' -auto-approve || true
+            # Try to import other resources
+            # VCN
+            VCN_ID=$(oci network vcn list --compartment-id "${OCI_TENANCY_OCID}" --display-name "nixos-vcn" 2>/dev/null | grep -oP 'ocid1\.vcn\.oc1\.[a-z0-9.]+' | head -1 || true)
+            if [ -n "$VCN_ID" ]; then
+              echo "Importing existing VCN: $VCN_ID"
+              terraform import 'oci_core_vcn.nixos' "$VCN_ID" || true
             fi
             
-            # Migrate to S3 backend
-            terraform init -migrate-state -backend-config="hostname=objectstorage.${OCI_REGION}.oraclecloud.com" -backend-config="bucket_name=nixos-images-tfstate" -backend-config="key=nixos-deploy/terraform.tfstate" -backend-config="region=${OCI_REGION}" -backend-config="tenancy_ocid=${OCI_TENANCY_OCID}" -backend-config="user_ocid=${OCI_USER_OCID}" -backend-config="fingerprint=${OCI_FINGERPRINT}" -backend-config="private_key_path=/tmp/oci_private_key"
+            # Subnet
+            SUBNET_ID=$(oci network subnet list --compartment-id "${OCI_TENANCY_OCID}" --display-name "nixos-subnet" 2>/dev/null | grep -oP 'ocid1\.subnet\.oc1\.[a-z0-9.]+' | head -1 || true)
+            if [ -n "$SUBNET_ID" ]; then
+              echo "Importing existing subnet: $SUBNET_ID"
+              terraform import 'oci_core_subnet.nixos' "$SUBNET_ID" || true
+            fi
           fi
           
           # Apply changes

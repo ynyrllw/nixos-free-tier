@@ -5,17 +5,6 @@ terraform {
       version = "~> 6.0"
     }
   }
-
-  backend "s3" {
-    hostname     = "objectstorage.${var.region}.oraclecloud.com"
-    bucket_name  = "${var.bucket_name}-tfstate"
-    key          = "nixos-deploy/terraform.tfstate"
-    region       = var.region
-    tenancy_ocid = var.tenancy_ocid
-    user_ocid    = var.user_ocid
-    fingerprint  = var.fingerprint
-    private_key_path = var.private_key_path
-  }
 }
 
 provider "oci" {
