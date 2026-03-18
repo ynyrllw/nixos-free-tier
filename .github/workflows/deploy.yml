@@ -94,42 +94,43 @@ jobs:
           # Initialize Terraform
           terraform init
           
-          # Check if state is empty and try to import existing resources
-          if [ ! -f .terraform/terraform.tfstate ] || [ ! -s .terraform/terraform.tfstate ]; then
-            echo "No existing state found, checking for existing resources to import..."
-            
-            # Import existing resources if they exist
-            # Try to find and import existing NixOS image
-            IMAGE_ID=$(oci compute image list --compartment-id "${OCI_TENANCY_OCID}" --lifecycle-state AVAILABLE --display-name "NixOS ARM64" 2>/dev/null | grep -oP 'ocid1\.image\.oc1\.[a-z0-9.]+' | head -1 || true)
-            if [ -n "$IMAGE_ID" ]; then
-              echo "Importing existing image: $IMAGE_ID"
-              terraform import 'oci_core_image.nixos' "$IMAGE_ID" || true
-            fi
-            
-            # Try to find and import existing instance
-            INSTANCE_ID=$(oci compute instance list --compartment-id "${OCI_TENANCY_OCID}" --lifecycle-state RUNNING --display-name "nixos" 2>/dev/null | grep -oP 'ocid1\.instance\.oc1\.[a-z0-9.]+' | head -1 || true)
-            if [ -n "$INSTANCE_ID" ]; then
-              echo "Importing existing instance: $INSTANCE_ID"
-              terraform import 'oci_core_instance.nixos' "$INSTANCE_ID" || true
-            fi
-            
-            # Try to import other resources
-            # VCN
-            VCN_ID=$(oci network vcn list --compartment-id "${OCI_TENANCY_OCID}" --display-name "nixos-vcn" 2>/dev/null | grep -oP 'ocid1\.vcn\.oc1\.[a-z0-9.]+' | head -1 || true)
-            if [ -n "$VCN_ID" ]; then
-              echo "Importing existing VCN: $VCN_ID"
-              terraform import 'oci_core_vcn.nixos' "$VCN_ID" || true
-            fi
-            
-            # Subnet
-            SUBNET_ID=$(oci network subnet list --compartment-id "${OCI_TENANCY_OCID}" --display-name "nixos-subnet" 2>/dev/null | grep -oP 'ocid1\.subnet\.oc1\.[a-z0-9.]+' | head -1 || true)
-            if [ -n "$SUBNET_ID" ]; then
-              echo "Importing existing subnet: $SUBNET_ID"
-              terraform import 'oci_core_subnet.nixos' "$SUBNET_ID" || true
-            fi
+          # Try to import existing bucket first (since state is ephemeral)
+          BUCKET_EXISTS=$(oci os bucket get --namespace-name "${OCI_TENANCY_OCID}" --name "nixos-images" 2>&1 || echo "NOT_FOUND")
+          if echo "$BUCKET_EXISTS" | grep -q "ocid1\.bucket"; then
+            BUCKET_OCID=$(echo "$BUCKET_EXISTS" | grep -oP 'ocid1\.bucket\.oc1\.[a-z0-9.]+' | head -1)
+            echo "Importing existing bucket: $BUCKET_OCID"
+            terraform import 'oci_objectstorage_bucket.nixos_bucket' "$BUCKET_OCID" || true
           fi
           
-          # Apply changes
+          # Target apply the bucket first
+          terraform apply -target oci_objectstorage_bucket.nixos_bucket -auto-approve
+          
+          # Try to import other existing resources
+          IMAGE_ID=$(oci compute image list --compartment-id "${OCI_TENANCY_OCID}" --lifecycle-state AVAILABLE --display-name "NixOS ARM64" 2>/dev/null | grep -oP 'ocid1\.image\.oc1\.[a-z0-9.]+' | head -1 || true)
+          if [ -n "$IMAGE_ID" ]; then
+            echo "Importing existing image: $IMAGE_ID"
+            terraform import 'oci_core_image.nixos' "$IMAGE_ID" || true
+          fi
+          
+          INSTANCE_ID=$(oci compute instance list --compartment-id "${OCI_TENANCY_OCID}" --lifecycle-state RUNNING --display-name "nixos" 2>/dev/null | grep -oP 'ocid1\.instance\.oc1\.[a-z0-9.]+' | head -1 || true)
+          if [ -n "$INSTANCE_ID" ]; then
+            echo "Importing existing instance: $INSTANCE_ID"
+            terraform import 'oci_core_instance.nixos' "$INSTANCE_ID" || true
+          fi
+          
+          VCN_ID=$(oci network vcn list --compartment-id "${OCI_TENANCY_OCID}" --display-name "nixos-vcn" 2>/dev/null | grep -oP 'ocid1\.vcn\.oc1\.[a-z0-9.]+' | head -1 || true)
+          if [ -n "$VCN_ID" ]; then
+            echo "Importing existing VCN: $VCN_ID"
+            terraform import 'oci_core_vcn.nixos' "$VCN_ID" || true
+          fi
+          
+          SUBNET_ID=$(oci network subnet list --compartment-id "${OCI_TENANCY_OCID}" --display-name "nixos-subnet" 2>/dev/null | grep -oP 'ocid1\.subnet\.oc1\.[a-z0-9.]+' | head -1 || true)
+          if [ -n "$SUBNET_ID" ]; then
+            echo "Importing existing subnet: $SUBNET_ID"
+            terraform import 'oci_core_subnet.nixos' "$SUBNET_ID" || true
+          fi
+          
+          # Apply remaining changes
           terraform apply -auto-approve
 
       - name: Output instance IP
