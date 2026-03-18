@@ -6,14 +6,10 @@ terraform {
     }
   }
 
-  backend "s3" {
-    bucket                 = "nixos-images"
-    key                   = "terraform.tfstate"
-    region                = "eu-zurich-1"
-    endpoint              = "https://objectstorage.${var.region}.oraclecloud.com"
-    skip_credentials_validation = true
-    skip_metadata_api_check     = true
-    force_path_style              = true
+  backend "oci" {
+    bucket    = "nixos-images"
+    namespace = "zr4kpvluldho"
+    key       = "terraform.tfstate"
   }
 }
 
