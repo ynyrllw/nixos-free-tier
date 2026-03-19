@@ -46,8 +46,8 @@ jobs:
       - name: Rename image file
         run: mv terraform/nixos.qcow2 terraform/nixos-aarch64.qcow2
 
-      - name: Setup Terraform
-        uses: hashicorp/setup-terraform@v3
+      - name: Setup OpenTofu
+        uses: opentofu/setup-opentofu@v1
 
       - name: Install OCI CLI
         run: |
@@ -87,12 +87,16 @@ jobs:
           chmod 600 ~/.oci/config
           
           # Get namespace
-          NAMESPACE=$(oci os ns get --raw-output 2>/dev/null) || NAMESPACE=""
+          NAMESPACE=$(oci os ns get 2>/dev/null | jq -r '.data // empty') || NAMESPACE=""
           echo "Namespace: $NAMESPACE"
           
           # Create bucket
           echo "Creating bucket..."
-          oci os bucket create --namespace-name "${NAMESPACE:-zr4kpvluldho}" --name "nixos-images" --compartment-id "${OCI_TENANCY_OCID}" || echo "Bucket may already exist"
+          if [ -n "$NAMESPACE" ]; then
+            oci os bucket create --namespace-name "$NAMESPACE" --name "nixos-images" --compartment-id "${OCI_TENANCY_OCID}" || echo "Bucket may already exist"
+          else
+            echo "Could not determine namespace, skipping bucket creation"
+          fi
           
           # Write terraform vars
           cat > terraform.tfvars << EOF
@@ -110,10 +114,10 @@ jobs:
           EOF
           
           # Init and apply
-          terraform init
-          terraform apply -auto-approve
+          tofu init
+          tofu apply -auto-approve
 
       - name: Output instance IP
         working-directory: terraform
         run: |
-          echo "Instance IP: $(terraform output -raw instance_ip)"
+          echo "Instance IP: $(tofu output -raw instance_ip)"
