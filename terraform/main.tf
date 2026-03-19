@@ -2,7 +2,7 @@ terraform {
   required_providers {
     oci = {
       source  = "oracle/oci"
-      version = "~> 6.0"
+      version = "~> 8.6"
     }
   }
 }
@@ -39,13 +39,6 @@ data "oci_objectstorage_namespace" "this" {
   compartment_id = var.tenancy_ocid
 }
 
-resource "oci_objectstorage_object" "nixos_image" {
-  bucket    = var.bucket_name
-  namespace = data.oci_objectstorage_namespace.this.namespace
-  object    = "nixos-aarch64.qcow2"
-  source    = var.image_source
-}
-
 data "oci_objectstorage_bucket" "nixos_bucket" {
   namespace = data.oci_objectstorage_namespace.this.namespace
   name      = var.bucket_name
@@ -58,7 +51,7 @@ data "oci_identity_availability_domains" "ads" {
 resource "oci_core_vcn" "nixos" {
   compartment_id = var.compartment_ocid != "" ? var.compartment_ocid : var.tenancy_ocid
   display_name   = "nixos-vcn"
-  cidr_blocks     = ["10.0.0.0/16"]
+  cidr_blocks    = ["10.0.0.0/16"]
 }
 
 resource "oci_core_internet_gateway" "nixos" {
@@ -97,12 +90,12 @@ resource "oci_core_security_list" "nixos" {
 }
 
 resource "oci_core_subnet" "nixos" {
-  compartment_id     = var.compartment_ocid != "" ? var.compartment_ocid : var.tenancy_ocid
-  vcn_id              = oci_core_vcn.nixos.id
-  display_name        = "nixos-subnet"
-  cidr_block          = "10.0.1.0/24"
-  route_table_id      = oci_core_route_table.nixos.id
-  security_list_ids   = [oci_core_security_list.nixos.id]
+  compartment_id           = var.compartment_ocid != "" ? var.compartment_ocid : var.tenancy_ocid
+  vcn_id                    = oci_core_vcn.nixos.id
+  display_name             = "nixos-subnet"
+  cidr_block                = "10.0.1.0/24"
+  route_table_id            = oci_core_route_table.nixos.id
+  security_list_ids         = [oci_core_security_list.nixos.id]
   prohibit_public_ip_on_vnic = false
 }
 
@@ -118,7 +111,7 @@ resource "oci_core_image" "nixos" {
     source_type     = "objectStorageTuple"
     namespace_name  = data.oci_objectstorage_namespace.this.namespace
     bucket_name     = data.oci_objectstorage_bucket.nixos_bucket.name
-    object_name     = oci_objectstorage_object.nixos_image.object
+    object_name     = "nixos-aarch64.qcow2"
   }
 
   launch_mode = "PARAVIRTUALIZED"
@@ -136,8 +129,24 @@ resource "oci_core_shape_management" "nixos_a1_compat" {
   depends_on = [oci_core_image.nixos]
 }
 
+# Image capability schema - using current version from OCI
+resource "oci_core_compute_image_capability_schema" "nixos_caps" {
+  compartment_id = var.compartment_ocid != "" ? var.compartment_ocid : var.tenancy_ocid
+  image_id = oci_core_image.nixos.id
+  compute_global_image_capability_schema_version_name = "807910c5-d2a8-4c82-8dec-7ebe22b841c3"
+
+  schema_data = {
+    "Compute.Firmware" = jsonencode({ descriptorType = "enumstring", source = "IMAGE", defaultValue = "UEFI_64", values = ["UEFI_64"] })
+    "Compute.LaunchMode" = jsonencode({ descriptorType = "enumstring", source = "IMAGE", defaultValue = "PARAVIRTUALIZED", values = ["PARAVIRTUALIZED"] })
+    "Storage.BootVolumeType" = jsonencode({ descriptorType = "enumstring", source = "IMAGE", defaultValue = "PARAVIRTUALIZED", values = ["PARAVIRTUALIZED"] })
+    "Network.AttachmentType" = jsonencode({ descriptorType = "enumstring", source = "IMAGE", defaultValue = "PARAVIRTUALIZED", values = ["PARAVIRTUALIZED"] })
+  }
+
+  depends_on = [oci_core_image.nixos]
+}
+
 resource "oci_core_instance" "nixos" {
-  compartment_id      = var.compartment_ocid
+  compartment_id      = var.compartment_ocid != "" ? var.compartment_ocid : var.tenancy_ocid
   availability_domain = data.oci_identity_availability_domains.ads.availability_domains[0].name
   shape               = "VM.Standard.A1.Flex"
 
@@ -159,7 +168,7 @@ resource "oci_core_instance" "nixos" {
 
   launch_options {
     network_type     = "PARAVIRTUALIZED"
-    boot_volume_type  = "PARAVIRTUALIZED"
+    boot_volume_type = "PARAVIRTUALIZED"
   }
 
   depends_on = [

@@ -71,3 +71,85 @@ Check for hardcoded values that should be synced:
 - Default region values
 - Variable names
 - Required vs optional variables
+
+## Managing Existing OCI Resources
+
+### Prerequisites
+
+1. Install OCI CLI:
+   ```bash
+   bash -c "$(curl -L https://raw.githubusercontent.com/oracle/oci-cli/master/scripts/install/install.sh)" -- --accept-all-defaults --install-dir ~/.local/oci-cli
+   ```
+
+2. Configure OCI credentials (create `~/.oci/config`):
+   ```
+   [DEFAULT]
+   user=ocid1.user.oc1..aaaaaaa...
+   fingerprint=...
+   tenancy=ocid1.tenancy.oc1..aaaaaaa...
+   region=eu-zurich-1
+   key_file=/path/to/private-key.pem
+   ```
+
+### Finding Existing Resource IDs
+
+List all resources in the tenancy:
+```bash
+# Compute instances
+oci compute instance list --compartment-id <tenancy_ocid>
+
+# VCNs
+oci network vcn list --compartment-id <tenancy_ocid>
+
+# Images
+oci compute image list --compartment-id <tenancy_ocid>
+
+# Buckets
+oci os bucket list --compartment-id <tenancy_ocid>
+```
+
+### Importing Existing Resources into Terraform
+
+1. Find the resource OCIDs from OCI console or CLI
+2. Add/update the OCID as a default in `variables.tf`
+3. Add import blocks in `main.tf`:
+   ```hcl
+   import {
+     to = oci_core_vcn.nixos
+     id = var.vcn_id
+   }
+   ```
+4. Run: `tofu init` then `tofu plan`
+
+### Deleting Resources
+
+#### Via Console (Recommended for VCNs with dependencies)
+1. Go to Networking → Virtual Cloud Networks
+2. Select the VCN and click Delete (this removes subnet, IG, route table, security list)
+
+#### Via CLI
+```bash
+# Delete compute instances
+oci compute instance terminate --instance-id <instance_ocid> --preserve-boot-volume false --force
+
+# Delete custom images
+oci compute image delete --image-id <image_ocid> --force
+
+# Delete buckets (must delete objects first)
+oci os object delete --bucket-name <bucket> --object-name <object> --force
+oci os bucket delete --name <bucket> --force
+
+# Delete VCNs and components
+oci network subnet delete --subnet-id <subnet_ocid> --force
+oci network internet-gateway delete --ig-id <ig_ocid> --force
+oci network vcn delete --vcn-id <vcn_ocid> --force
+```
+
+Note: Deleting VCNs requires first deleting subnets, internet gateways, and route tables that reference them.
+
+### Troubleshooting "Out of Host Capacity"
+
+If ARM instance creation fails with capacity errors:
+1. Upgrade to Pay As You Go for priority capacity access
+2. Set up $0 budget alert in Billing → Budgets to avoid charges
+3. The free tier allows 4 OCPUs / 24GB RAM (3000 OCPU hours/month) - running continuously stays under limit
