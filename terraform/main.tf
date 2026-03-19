@@ -6,9 +6,9 @@ terraform {
     }
   }
   backend "oci" {
-    bucket      = var.bucket_name
-    namespace   = data.oci_objectstorage_namespace.this.namespace
-    region      = var.region
+    bucket      = "nixos-images"
+    namespace   = "zr4kpvluldho"
+    region      = "eu-zurich-1"
   }
 }
 

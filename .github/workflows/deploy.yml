@@ -46,8 +46,8 @@ jobs:
       - name: Rename image file
         run: mv terraform/nixos.qcow2 terraform/nixos-aarch64.qcow2
 
-      - name: Setup OpenTofu
-        uses: opentofu/setup-opentofu@v1
+      - name: Setup Terraform
+        uses: hashicorp/setup-terraform@v3
 
       - name: Install OCI CLI
         run: |
@@ -114,10 +114,10 @@ jobs:
           EOF
           
           # Init and apply
-          tofu init
-          tofu apply -auto-approve
+          terraform init
+          terraform apply -auto-approve
 
       - name: Output instance IP
         working-directory: terraform
         run: |
-          echo "Instance IP: $(tofu output -raw instance_ip)"
+          echo "Instance IP: $(terraform output -raw instance_ip)"
