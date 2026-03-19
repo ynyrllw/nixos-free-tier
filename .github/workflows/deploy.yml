@@ -107,9 +107,19 @@ jobs:
           memory_in_gbs = ${MEMORY_GB}
           EOF
           
-          # Create image bucket if needed
+          # Create image bucket and wait for it to be available
           echo "Creating image bucket..."
           oci os bucket create --namespace-name "${OCI_TENANCY_OCID}" --name "${BUCKET_NAME}" --compartment-id "${OCI_TENANCY_OCID}" 2>/dev/null || true
+          echo "Waiting for bucket to be available..."
+          for i in {1..30}; do
+            BUCKET_STATE=$(oci os bucket get --namespace-name "${OCI_TENANCY_OCID}" --name "${BUCKET_NAME}" --query 'data."lifecycle-state"' --raw-output 2>/dev/null)
+            if [ "$BUCKET_STATE" = "ACTIVE" ]; then
+              echo "Bucket is active"
+              break
+            fi
+            echo "Waiting... ($BUCKET_STATE)"
+            sleep 2
+          done
           
           # Initialize Terraform
           terraform init
