@@ -69,15 +69,13 @@ jobs:
           OCPUS: ${{ github.event.inputs.ocpus || '4' }}
           MEMORY_GB: ${{ github.event.inputs.memory_gb || '24' }}
         run: |
-          # Add OCI CLI to PATH
+          set -x
           export PATH="$HOME/bin:$PATH"
           export OCI_CLI_SUPPRESS_FILE_PERMISSIONS_WARNING=True
           
-          # Write private key
           echo "$OCI_PRIVATE_KEY" > /tmp/oci_private_key
           chmod 600 /tmp/oci_private_key
           
-          # Configure OCI CLI
           mkdir -p ~/.oci
           cat > ~/.oci/config << EOF
           [DEFAULT]
@@ -87,14 +85,15 @@ jobs:
           tenancy=$OCI_TENANCY_OCID
           region=$OCI_REGION
           EOF
+          chmod 600 ~/.oci/config
           
           # Get namespace
-          NAMESPACE=$(oci os namespace get --query 'data' --raw-output)
+          NAMESPACE=$(oci os namespace get --query 'data' --raw-output) || { echo "OCI CLI failed"; exit 1; }
           echo "Namespace: $NAMESPACE"
           
-          # Create bucket if not exists
-          echo "Ensuring bucket exists..."
-          oci os bucket create --namespace-name "${NAMESPACE}" --name "nixos-images" --compartment-id "${OCI_TENANCY_OCID}" 2>/dev/null || true
+          # Create bucket
+          echo "Creating bucket..."
+          oci os bucket create --namespace-name "${NAMESPACE}" --name "nixos-images" --compartment-id "${OCI_TENANCY_OCID}" || echo "Bucket may already exist"
           
           # Write terraform vars
           cat > terraform.tfvars << EOF
