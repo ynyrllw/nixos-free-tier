@@ -74,6 +74,17 @@ jobs:
           echo "$OCI_PRIVATE_KEY" > /tmp/oci_private_key
           chmod 600 /tmp/oci_private_key
           
+          # Configure OCI CLI
+          mkdir -p ~/.oci
+          cat > ~/.oci/config << EOF
+          [DEFAULT]
+          user=$OCI_USER_OCID
+          fingerprint=$OCI_FINGERPRINT
+          key_file=/tmp/oci_private_key
+          tenancy=$OCI_TENANCY_OCID
+          region=$OCI_REGION
+          EOF
+          
           # Fail if SSH_PUBLIC_KEY is not set
           if [ -z "$SSH_PUBLIC_KEY" ]; then
             echo "ERROR: SSH_PUBLIC_KEY is not set. Please add it as a GitHub Actions variable."

@@ -7,12 +7,12 @@ terraform {
   }
   
   backend "s3" {
-    endpoint         = "https://objectstorage.eu-zurich-1.oraclecloud.com"
-    region           = "eu-zurich-1"
-    bucket           = "nixos-terraform-state"
-    key              = "terraform.tfstate"
-    access_key       = "nixos-terraform-state"
-    secret_key       = "nixos-terraform-state"
+    endpoint                    = "https://objectstorage.eu-zurich-1.oraclecloud.com"
+    region                      = "us-east-1"
+    bucket                      = "nixos-terraform-state"
+    key                         = "terraform.tfstate"
+    access_key                  = "nixos-terraform-state"
+    secret_key                  = "nixos-terraform-state"
     skip_credentials_validation = true
     skip_metadata_api_check     = true
     skip_requesting_account_id  = true
