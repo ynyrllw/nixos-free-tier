@@ -109,10 +109,16 @@ jobs:
           
           # Create image bucket and wait for it to be available
           echo "Creating image bucket..."
-          oci os bucket create --namespace-name "${OCI_TENANCY_OCID}" --name "${BUCKET_NAME}" --compartment-id "${OCI_TENANCY_OCID}" 2>/dev/null || true
+          BUCKET_EXISTS=$(oci os bucket get --namespace-name "${OCI_TENANCY_OCID}" --name "${BUCKET_NAME}" --query 'data.id' --raw-output 2>/dev/null || true)
+          if [ -z "$BUCKET_EXISTS" ]; then
+            echo "Bucket does not exist, creating..."
+            oci os bucket create --namespace-name "${OCI_TENANCY_OCID}" --name "${BUCKET_NAME}" --compartment-id "${OCI_TENANCY_OCID}" || echo "Bucket creation failed"
+          else
+            echo "Bucket already exists: $BUCKET_EXISTS"
+          fi
           echo "Waiting for bucket to be available..."
           for i in {1..30}; do
-            BUCKET_STATE=$(oci os bucket get --namespace-name "${OCI_TENANCY_OCID}" --name "${BUCKET_NAME}" --query 'data."lifecycle-state"' --raw-output 2>/dev/null)
+            BUCKET_STATE=$(oci os bucket get --namespace-name "${OCI_TENANCY_OCID}" --name "${BUCKET_NAME}" --query 'data."lifecycle-state"' --raw-output 2>/dev/null || echo "NOT_FOUND")
             if [ "$BUCKET_STATE" = "ACTIVE" ]; then
               echo "Bucket is active"
               break
