@@ -80,8 +80,8 @@ jobs:
             exit 1
           fi
           
-          # Use fixed bucket name matching terraform backend
-          BUCKET_NAME="nixos-images"
+          # Use unique bucket name for image (with date to avoid conflicts)
+          BUCKET_NAME="nixos-images-$(date +%Y%m%d)"
           cat > terraform.tfvars << EOF
           tenancy_ocid = "$OCI_TENANCY_OCID"
           user_ocid = "$OCI_USER_OCID"
@@ -96,64 +96,18 @@ jobs:
           memory_in_gbs = ${MEMORY_GB}
           EOF
           
-          # Create bucket if it doesn't exist (using OCI CLI, not terraform)
-          echo "Ensuring bucket exists..."
-          BUCKET_OCID=$(oci os bucket get --namespace-name "${OCI_TENANCY_OCID}" --name "${BUCKET_NAME}" --query 'data.id' --raw-output 2>/dev/null || true)
-          if [ -z "$BUCKET_OCID" ]; then
-            echo "Creating bucket ${BUCKET_NAME}..."
-            oci os bucket create --namespace-name "${OCI_TENANCY_OCID}" --name "${BUCKET_NAME}" --compartment-id "${OCI_TENANCY_OCID}" 2>/dev/null
-            sleep 10
-          fi
+          # Create state bucket (needed for terraform backend)
+          echo "Creating state bucket..."
+          oci os bucket create --namespace-name "${OCI_TENANCY_OCID}" --name "nixos-terraform-state" --compartment-id "${OCI_TENANCY_OCID}" 2>/dev/null || true
           
-          # Initialize Terraform
+          # Create image bucket if needed
+          echo "Creating image bucket..."
+          oci os bucket create --namespace-name "${OCI_TENANCY_OCID}" --name "${BUCKET_NAME}" --compartment-id "${OCI_TENANCY_OCID}" 2>/dev/null || true
+          
+          # Initialize Terraform (uses state bucket for backend)
           terraform init
           
-          # Image
-          IMAGE_ID=$(oci compute image list --compartment-id "${OCI_TENANCY_OCID}" --lifecycle-state AVAILABLE --display-name "NixOS ARM64" --query 'data[0].id' --raw-output 2>/dev/null || true)
-          if [ -n "$IMAGE_ID" ]; then
-            echo "Importing image: $IMAGE_ID"
-            terraform import 'oci_core_image.nixos' "$IMAGE_ID" || true
-          fi
-          
-          # Shape management (if image already has it configured)
-          if [ -n "$IMAGE_ID" ]; then
-            SHAPE_MGMT=$(oci compute shape-management list-image-compatible-shapes --image-id "$IMAGE_ID" --query 'data[0]["shape-name"]' --raw-output 2>/dev/null || true)
-            if [ -n "$SHAPE_MGMT" ]; then
-              terraform import 'oci_core_shape_management.nixos_a1_compat' "c/${OCI_TENANCY_OCID}/i/${IMAGE_ID}/s/VM.Standard.A1.Flex" 2>/dev/null || true
-            fi
-          fi
-          
-          # Image capability schema
-          if [ -n "$IMAGE_ID" ]; then
-            CAPS_SCHEMA_ID=$(oci compute image-capability-schema list --compartment-id "${OCI_TENANCY_OCID}" --image-id "$IMAGE_ID" --query 'data[0].id' --raw-output 2>/dev/null || true)
-            if [ -n "$CAPS_SCHEMA_ID" ]; then
-              echo "Importing image capability schema: $CAPS_SCHEMA_ID"
-              terraform import 'oci_core_compute_image_capability_schema.nixos_caps' "$CAPS_SCHEMA_ID" || true
-            fi
-          fi
-          
-          # Instance
-          INSTANCE_ID=$(oci compute instance list --compartment-id "${OCI_TENANCY_OCID}" --lifecycle-state RUNNING --display-name "nixos" --query 'data[0].id' --raw-output 2>/dev/null || true)
-          if [ -n "$INSTANCE_ID" ]; then
-            echo "Importing instance: $INSTANCE_ID"
-            terraform import 'oci_core_instance.nixos' "$INSTANCE_ID" || true
-          fi
-          
-          # VCN
-          VCN_ID=$(oci network vcn list --compartment-id "${OCI_TENANCY_OCID}" --display-name "nixos-vcn" --query 'data[0].id' --raw-output 2>/dev/null || true)
-          if [ -n "$VCN_ID" ]; then
-            echo "Importing VCN: $VCN_ID"
-            terraform import 'oci_core_vcn.nixos' "$VCN_ID" || true
-          fi
-          
-          # Subnet
-          SUBNET_ID=$(oci network subnet list --compartment-id "${OCI_TENANCY_OCID}" --display-name "nixos-subnet" --query 'data[0].id' --raw-output 2>/dev/null || true)
-          if [ -n "$SUBNET_ID" ]; then
-            echo "Importing subnet: $SUBNET_ID"
-            terraform import 'oci_core_subnet.nixos' "$SUBNET_ID" || true
-          fi
-          
-          # Apply changes
+          # Apply changes (state is persisted in nixos-terraform-state bucket)
           terraform apply -auto-approve
 
       - name: Output instance IP
