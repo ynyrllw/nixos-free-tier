@@ -5,6 +5,11 @@ terraform {
       version = "~> 8.6"
     }
   }
+  backend "oci" {
+    bucket      = var.bucket_name
+    namespace   = data.oci_objectstorage_namespace.this.namespace
+    region      = var.region
+  }
 }
 
 provider "oci" {
