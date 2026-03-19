@@ -107,15 +107,11 @@ jobs:
           memory_in_gbs = ${MEMORY_GB}
           EOF
           
-          # Create state bucket (needed for terraform backend)
-          echo "Creating state bucket..."
-          oci os bucket create --namespace-name "${OCI_TENANCY_OCID}" --name "nixos-terraform-state" --compartment-id "${OCI_TENANCY_OCID}" 2>/dev/null || true
-          
           # Create image bucket if needed
           echo "Creating image bucket..."
           oci os bucket create --namespace-name "${OCI_TENANCY_OCID}" --name "${BUCKET_NAME}" --compartment-id "${OCI_TENANCY_OCID}" 2>/dev/null || true
           
-          # Initialize Terraform (uses state bucket for backend)
+          # Initialize Terraform
           terraform init
           
           # Apply changes (state is persisted in nixos-terraform-state bucket)
