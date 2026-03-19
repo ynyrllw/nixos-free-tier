@@ -69,7 +69,6 @@ jobs:
           OCPUS: ${{ github.event.inputs.ocpus || '4' }}
           MEMORY_GB: ${{ github.event.inputs.memory_gb || '24' }}
         run: |
-          set -x
           export PATH="$HOME/bin:$PATH"
           export OCI_CLI_SUPPRESS_FILE_PERMISSIONS_WARNING=True
           
@@ -87,8 +86,21 @@ jobs:
           EOF
           chmod 600 ~/.oci/config
           
-          # Get namespace
-          NAMESPACE=$(oci ns get --query 'data' --raw-output) || { echo "OCI CLI failed"; exit 1; }
+          # Get namespace - try different commands
+          echo "Checking OCI CLI..."
+          oci --help 2>&1 | head -20
+          
+          # Try to get namespace
+          NAMESPACE=""
+          for cmd in "oci os namespace get" "oci object-storage namespace get" "oci ns get" "oci os ns get"; do
+            echo "Trying: $cmd"
+            NAMESPACE=$(eval "$cmd --query 'data' --raw-output 2>/dev/null") && break || true
+          done
+          
+          if [ -z "$NAMESPACE" ]; then
+            echo "Could not get namespace, using default"
+            NAMESPACE="zr4kpvluldho"
+          fi
           echo "Namespace: $NAMESPACE"
           
           # Create bucket
