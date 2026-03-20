@@ -69,6 +69,12 @@ variable "ssh_public_key" {
   type        = string
 }
 
+variable "ssh_private_key_path" {
+  description = "Path to SSH private key for deployment"
+  type        = string
+  default     = "/tmp/oci_private_key"
+}
+
 variable "cloud_init_user_data" {
   description = "Cloud-init user data (optional)"
   type        = string
