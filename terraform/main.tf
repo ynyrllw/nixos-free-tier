@@ -116,8 +116,7 @@ module "deploy" {
   target_host = oci_core_instance.nixos.public_ip
   instance_id = oci_core_instance.nixos.id
 
-  install_ssh_key         = var.ssh_public_key
-  deployment_ssh_key_path = var.ssh_private_key_path
+  install_ssh_key = var.ssh_public_key
 
   nixos_system_attr      = ".#nixosConfigurations.nixos.config.system.build.toplevel"
   nixos_partitioner_attr = ".#nixosConfigurations.nixos.config.system.build.diskoNoDeps"
