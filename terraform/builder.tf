@@ -16,62 +16,6 @@ provider "oci" {
   private_key_path = var.private_key_path
 }
 
-variable "tenancy_ocid" {
-  description = "OCI Tenancy OCID"
-  type        = string
-}
-
-variable "user_ocid" {
-  description = "OCI User OCID"
-  type        = string
-}
-
-variable "fingerprint" {
-  description = "API Key Fingerprint"
-  type        = string
-}
-
-variable "private_key_path" {
-  description = "Path to private key"
-  type        = string
-  default     = "/tmp/oci_private_key"
-}
-
-variable "compartment_ocid" {
-  description = "Compartment OCID"
-  type        = string
-  default     = ""
-}
-
-variable "region" {
-  description = "OCI Region"
-  type        = string
-  default     = "eu-zurich-1"
-}
-
-variable "bucket_name" {
-  description = "Object Storage Bucket Name"
-  type        = string
-  default     = "nixos-builder"
-}
-
-variable "ocpus" {
-  description = "Number of OCPUs"
-  type        = number
-  default     = 4
-}
-
-variable "memory_in_gbs" {
-  description = "Memory in GB"
-  type        = number
-  default     = 24
-}
-
-variable "ssh_public_key" {
-  description = "SSH public key for access"
-  type        = string
-}
-
 data "oci_identity_availability_domains" "ads" {
   compartment_id = var.tenancy_ocid
 }

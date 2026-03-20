@@ -4,6 +4,24 @@ variable "tenancy_ocid" {
   sensitive   = true
 }
 
+variable "user_ocid" {
+  description = "OCI User OCID"
+  type        = string
+  sensitive   = true
+}
+
+variable "fingerprint" {
+  description = "API Key Fingerprint"
+  type        = string
+  sensitive   = true
+}
+
+variable "private_key_path" {
+  description = "Path to private key"
+  type        = string
+  default     = "/tmp/oci_private_key"
+}
+
 variable "compartment_ocid" {
   description = "Compartment OCID (defaults to tenancy_ocid if empty)"
   type        = string
