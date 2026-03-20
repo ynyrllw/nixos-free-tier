@@ -7,17 +7,17 @@ terraform {
     }
   }
   backend "oci" {
-    bucket      = "nixos-images"
-    namespace   = "zr4kpvluldho"
-    region      = "eu-zurich-1"
+    bucket    = "nixos-images"
+    namespace = "zr4kpvluldho"
+    region    = "eu-zurich-1"
   }
 }
 
 provider "oci" {
   region           = var.region
   tenancy_ocid     = var.tenancy_ocid
-  user_ocid       = var.user_ocid
-  fingerprint     = var.fingerprint
+  user_ocid        = var.user_ocid
+  fingerprint      = var.fingerprint
   private_key_path = var.private_key_path
 }
 
@@ -48,6 +48,14 @@ data "oci_objectstorage_namespace" "this" {
 data "oci_objectstorage_bucket" "nixos_bucket" {
   namespace = data.oci_objectstorage_namespace.this.namespace
   name      = var.bucket_name
+}
+
+resource "oci_objectstorage_object" "nixos_image" {
+  bucket       = data.oci_objectstorage_bucket.nixos_bucket.name
+  namespace    = data.oci_objectstorage_namespace.this.namespace
+  object       = "nixos-aarch64.qcow2"
+  source       = "./nixos-aarch64.qcow2"
+  content_type = "application/x-qemu-disk"
 }
 
 data "oci_identity_availability_domains" "ads" {
@@ -84,24 +92,24 @@ resource "oci_core_security_list" "nixos" {
   vcn_id         = oci_core_vcn.nixos.id
 
   egress_security_rules {
-    destination       = "0.0.0.0/0"
-    destination_type  = "CIDR_BLOCK"
-    protocol          = "all"
+    destination      = "0.0.0.0/0"
+    destination_type = "CIDR_BLOCK"
+    protocol         = "all"
   }
 
   ingress_security_rules {
-    protocol  = "all"
-    source    = "0.0.0.0/0"
+    protocol = "all"
+    source   = "0.0.0.0/0"
   }
 }
 
 resource "oci_core_subnet" "nixos" {
-  compartment_id           = var.compartment_ocid != "" ? var.compartment_ocid : var.tenancy_ocid
-  vcn_id                    = oci_core_vcn.nixos.id
-  display_name             = "nixos-subnet"
-  cidr_block                = "10.0.1.0/24"
-  route_table_id            = oci_core_route_table.nixos.id
-  security_list_ids         = [oci_core_security_list.nixos.id]
+  compartment_id             = var.compartment_ocid != "" ? var.compartment_ocid : var.tenancy_ocid
+  vcn_id                     = oci_core_vcn.nixos.id
+  display_name               = "nixos-subnet"
+  cidr_block                 = "10.0.1.0/24"
+  route_table_id             = oci_core_route_table.nixos.id
+  security_list_ids          = [oci_core_security_list.nixos.id]
   prohibit_public_ip_on_vnic = false
 }
 
@@ -114,10 +122,10 @@ resource "oci_core_image" "nixos" {
   display_name   = "NixOS ARM64"
 
   image_source_details {
-    source_type     = "objectStorageTuple"
-    namespace_name  = data.oci_objectstorage_namespace.this.namespace
-    bucket_name     = data.oci_objectstorage_bucket.nixos_bucket.name
-    object_name     = "nixos-aarch64.qcow2"
+    source_type    = "objectStorageTuple"
+    namespace_name = data.oci_objectstorage_namespace.this.namespace
+    bucket_name    = data.oci_objectstorage_bucket.nixos_bucket.name
+    object_name    = oci_objectstorage_object.nixos_image.object
   }
 
   launch_mode = "PARAVIRTUALIZED"
@@ -125,6 +133,8 @@ resource "oci_core_image" "nixos" {
   timeouts {
     create = "60m"
   }
+
+  depends_on = [oci_objectstorage_object.nixos_image]
 }
 
 resource "oci_core_shape_management" "nixos_a1_compat" {
@@ -137,13 +147,13 @@ resource "oci_core_shape_management" "nixos_a1_compat" {
 
 # Image capability schema - using current version from OCI
 resource "oci_core_compute_image_capability_schema" "nixos_caps" {
-  compartment_id = var.compartment_ocid != "" ? var.compartment_ocid : var.tenancy_ocid
-  image_id = oci_core_image.nixos.id
+  compartment_id                                      = var.compartment_ocid != "" ? var.compartment_ocid : var.tenancy_ocid
+  image_id                                            = oci_core_image.nixos.id
   compute_global_image_capability_schema_version_name = "807910c5-d2a8-4c82-8dec-7ebe22b841c3"
 
   schema_data = {
-    "Compute.Firmware" = jsonencode({ descriptorType = "enumstring", source = "IMAGE", defaultValue = "UEFI_64", values = ["UEFI_64"] })
-    "Compute.LaunchMode" = jsonencode({ descriptorType = "enumstring", source = "IMAGE", defaultValue = "PARAVIRTUALIZED", values = ["PARAVIRTUALIZED"] })
+    "Compute.Firmware"       = jsonencode({ descriptorType = "enumstring", source = "IMAGE", defaultValue = "UEFI_64", values = ["UEFI_64"] })
+    "Compute.LaunchMode"     = jsonencode({ descriptorType = "enumstring", source = "IMAGE", defaultValue = "PARAVIRTUALIZED", values = ["PARAVIRTUALIZED"] })
     "Storage.BootVolumeType" = jsonencode({ descriptorType = "enumstring", source = "IMAGE", defaultValue = "PARAVIRTUALIZED", values = ["PARAVIRTUALIZED"] })
     "Network.AttachmentType" = jsonencode({ descriptorType = "enumstring", source = "IMAGE", defaultValue = "PARAVIRTUALIZED", values = ["PARAVIRTUALIZED"] })
   }
@@ -191,6 +201,6 @@ users:
     ssh-authorized-keys:
       - ${var.ssh_public_key}
 EOF
-)
+    )
   }
 }

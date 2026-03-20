@@ -96,10 +96,6 @@ jobs:
           echo "Creating bucket..."
           if [ -n "$NAMESPACE" ]; then
             oci os bucket create --namespace-name "$NAMESPACE" --name "nixos-images" --compartment-id "${OCI_TENANCY_OCID}" || echo "Bucket may already exist"
-            
-            # Upload image to bucket
-            echo "Uploading NixOS image to bucket..."
-            oci os object put --namespace-name "$NAMESPACE" --bucket-name "nixos-images" --name "nixos-aarch64.qcow2" --file "nixos-aarch64.qcow2" --force || echo "Image upload skipped"
           else
             echo "Could not determine namespace, skipping bucket creation"
           fi
