@@ -119,7 +119,7 @@ data "oci_core_subnet" "public" {
 
 resource "oci_core_image" "nixos" {
   compartment_id = var.compartment_ocid != "" ? var.compartment_ocid : var.tenancy_ocid
-  display_name   = "NixOS ARM64"
+  display_name   = "NixOS-OCI-${formatdate("YYYYMMDD", timestamp())}"
 
   image_source_details {
     source_type    = "objectStorageTuple"

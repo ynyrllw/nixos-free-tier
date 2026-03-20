@@ -16,23 +16,131 @@ on:
       - main
 
 jobs:
-  build:
+  build-image:
     runs-on: ubuntu-latest
     steps:
-      - name: Download NixOS ARM image
-        run: |
-          curl -L -o nixos.qcow2 \
-            https://github.com/nix-community/nixos-images/releases/download/nixos-25.11/Image-aarch64-linux
+      - uses: actions/checkout@v4
 
-      - name: Upload artifact
+      - name: Setup Terraform
+        uses: hashicorp/setup-terraform@v3
+        with:
+          terraform_version: 1.12.0
+
+      - name: Install OCI CLI
+        run: |
+          bash -c "$(curl -L https://raw.githubusercontent.com/oracle/oci-cli/master/scripts/install/install.sh)" -- --accept-all-defaults
+          echo "$HOME/bin" >> $GITHUB_PATH
+
+      - name: Configure OCI
+        env:
+          OCI_TENANCY_OCID: ${{ vars.OCI_TENANCY_OCID }}
+          OCI_USER_OCID: ${{ vars.OCI_USER_OCID }}
+          OCI_FINGERPRINT: ${{ vars.OCI_FINGERPRINT }}
+          OCI_REGION: ${{ vars.OCI_REGION }}
+          OCI_PRIVATE_KEY: ${{ secrets.OCI_PRIVATE_KEY }}
+          SSH_PUBLIC_KEY: ${{ vars.SSH_PUBLIC_KEY }}
+        run: |
+          export PATH="$HOME/bin:$PATH"
+          export OCI_CLI_SUPPRESS_FILE_PERMISSIONS_WARNING=True
+          
+          echo "$OCI_PRIVATE_KEY" > /tmp/oci_private_key
+          chmod 600 /tmp/oci_private_key
+          
+          mkdir -p ~/.oci
+          cat > ~/.oci/config << EOF
+          [DEFAULT]
+          user=$OCI_USER_OCID
+          fingerprint=$OCI_FINGERPRINT
+          key_file=/tmp/oci_private_key
+          tenancy=$OCI_TENANCY_OCID
+          region=$OCI_REGION
+          EOF
+          chmod 600 ~/.oci/config
+          
+          NAMESPACE=$(oci os ns get 2>/dev/null | jq -r '.data')
+          echo "Namespace: $NAMESPACE"
+          
+          # Create bucket for builder output
+          oci os bucket create --namespace-name "$NAMESPACE" --name "nixos-builder" --compartment-id "${OCI_TENANCY_OCID}" || echo "Builder bucket exists"
+          
+          # Write builder terraform vars
+          cat > terraform/builder.tfvars << EOF
+          tenancy_ocid = "$OCI_TENANCY_OCID"
+          user_ocid = "$OCI_USER_OCID"
+          fingerprint = "$OCI_FINGERPRINT"
+          private_key_path = "/tmp/oci_private_key"
+          compartment_ocid = "$OCI_TENANCY_OCID"
+          region = "$OCI_REGION"
+          ssh_public_key = "$SSH_PUBLIC_KEY"
+          bucket_name = "nixos-builder"
+          ocpus = 4
+          memory_in_gbs = 24
+          EOF
+          
+          # Init and apply builder
+          cd terraform
+          terraform init
+          terraform apply -var-file="builder.tfvars" -auto-approve
+          
+          # Get builder IP
+          BUILDER_IP=$(terraform output -raw builder_instance_ip)
+          echo "BUILDER_IP=$BUILDER_IP" >> $GITHUB_ENV
+          echo "Builder IP: $BUILDER_IP"
+          
+          # Wait for builder to be ready
+          echo "Waiting for builder to be ready..."
+          sleep 60
+          
+          # Upload NixOS flake to builder
+          echo "Uploading flake..."
+          ssh-keyscan -H $BUILDER_IP >> ~/.ssh/known_hosts 2>/dev/null
+          scp -o StrictHostKeyChecking=no -o ConnectTimeout=30 nixos/flake.nix opc@$BUILDER_IP:/home/opc/flake.nix
+          
+          # Build NixOS image on ARM builder
+          echo "Building NixOS image (this takes ~30-60 minutes)..."
+          ssh opc@$BUILDER_IP << 'BUILDER_EOF'
+            set -e
+            # Install nix
+            sh <(curl -L https://nixos.org/nix/install) --daemon --yes
+            
+            # Source nix
+            . /nix/var/nix/profiles/default/etc/profile.d/nix-daemon.sh
+            
+            # Build NixOS OCI image
+            cd /home/opc
+            nix build .#packages.aarch64-linux.default --accept-flake-config -o result
+            
+            # The image is at result/nixos.qcow2
+            ls -la result/
+          BUILDER_EOF
+          
+          # Download image from builder
+          echo "Downloading NixOS image..."
+          scp -o StrictHostKeyChecking=no opc@$BUILDER_IP:/home/opc/result/nixos.qcow2 ./nixos.qcow2
+          
+          # Upload to object storage
+          echo "Uploading to object storage..."
+          oci os object put --namespace-name "$NAMESPACE" --bucket-name "nixos-builder" --name "nixos-aarch64.qcow2" --file ./nixos.qcow2 --force
+          
+          # Upload to artifacts
+          echo "Uploading as artifact..."
+          
+      - name: Upload image artifact
         uses: actions/upload-artifact@v4
         with:
           name: nixos-qcow2
           path: nixos.qcow2
           compression-level: 0
 
+      - name: Cleanup builder
+        if: always()
+        run: |
+          export PATH="$HOME/bin:$PATH"
+          cd terraform
+          terraform destroy -var-file="builder.tfvars" -auto-approve || true
+
   deploy:
-    needs: build
+    needs: build-image
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
@@ -42,9 +150,6 @@ jobs:
         with:
           name: nixos-qcow2
           path: terraform/
-
-      - name: Rename image file
-        run: mv terraform/nixos.qcow2 terraform/nixos-aarch64.qcow2
 
       - name: Setup Terraform
         uses: hashicorp/setup-terraform@v3
@@ -89,16 +194,15 @@ jobs:
           chmod 600 ~/.oci/config
           
           # Get namespace
-          NAMESPACE=$(oci os ns get 2>/dev/null | jq -r '.data // empty') || NAMESPACE=""
+          NAMESPACE=$(oci os ns get 2>/dev/null | jq -r '.data')
           echo "Namespace: $NAMESPACE"
           
-          # Create bucket
-          echo "Creating bucket..."
-          if [ -n "$NAMESPACE" ]; then
-            oci os bucket create --namespace-name "$NAMESPACE" --name "nixos-images" --compartment-id "${OCI_TENANCY_OCID}" || echo "Bucket may already exist"
-          else
-            echo "Could not determine namespace, skipping bucket creation"
-          fi
+          # Create bucket for images
+          oci os bucket create --namespace-name "$NAMESPACE" --name "nixos-images" --compartment-id "${OCI_TENANCY_OCID}" || echo "Bucket may already exist"
+          
+          # Upload image
+          echo "Uploading NixOS image..."
+          oci os object put --namespace-name "$NAMESPACE" --bucket-name "nixos-images" --name "nixos-aarch64.qcow2" --file "nixos.qcow2" --force
           
           # Write terraform vars
           cat > terraform.tfvars << EOF
