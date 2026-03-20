@@ -20,10 +20,10 @@ data "oci_identity_availability_domains" "ads" {
   compartment_id = var.tenancy_ocid
 }
 
-data "oci_core_images" "centos" {
+data "oci_core_images" "ubuntu" {
   compartment_id           = var.tenancy_ocid
-  operating_system         = "Oracle Linux"
-  operating_system_version = "9"
+  operating_system         = "Canonical Ubuntu"
+  operating_system_version = "24.04"
   shape                    = "VM.Standard.A1.Flex"
 
   sort_by    = "TIMECREATED"
@@ -97,7 +97,7 @@ resource "oci_core_instance" "nixos" {
 
   source_details {
     source_type = "image"
-    source_id   = data.oci_core_images.centos.images[0].id
+    source_id   = data.oci_core_images.ubuntu.images[0].id
   }
 
   create_vnic_details {
@@ -113,8 +113,9 @@ resource "oci_core_instance" "nixos" {
 module "deploy" {
   source = "github.com/nix-community/nixos-anywhere//terraform/all-in-one"
 
-  target_host             = oci_core_instance.nixos.public_ip
-  instance_id             = oci_core_instance.nixos.id
+  target_host = oci_core_instance.nixos.public_ip
+  instance_id = oci_core_instance.nixos.id
+
   install_ssh_key         = var.ssh_public_key
   deployment_ssh_key_path = var.ssh_private_key_path
 
@@ -123,7 +124,6 @@ module "deploy" {
 
   special_args = {
     target_ip = oci_core_instance.nixos.public_ip
-    ssh_user  = "opc"
   }
 }
 

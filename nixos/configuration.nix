@@ -1,30 +1,35 @@
-{ config, pkgs, lib, ... }:
+{ config, pkgs, lib, target-ip ? "10.0.0.2", ... }:
 
-let
-  target-ip = if (builtins.hasAttr "target_ip" specialArgs) then specialArgs.target_ip else "10.0.0.2";
-  ssh-user = if (builtins.hasAttr "ssh_user" specialArgs) then specialArgs.ssh_user else "root";
-in
 {
-  imports = [
-    ./hardware-config.nix
-  ];
-
   system.stateVersion = "25.05";
 
-  networking.hostName = "nixos";
+  # Bootloader for Oracle Cloud UEFI
+  boot.loader.grub = {
+    enable = true;
+    device = "/dev/sda";
+    efiSupport = true;
+    efiInstallAsRemovable = true;
+  };
 
-  networking.interfaces.ens3.ipv4.addresses = [{
-    address = target-ip;
-    prefixLength = 24;
-  }];
+  # Oracle Cloud networking - VirtIO
+  networking.hostName = "nixos";
+  
+  networking.interfaces.ens3 = {
+    ipv4.addresses = [{
+      address = target-ip;
+      prefixLength = 24;
+    }];
+  };
 
   networking.defaultGateway = {
     address = "10.0.0.1";
     interface = "ens3";
   };
 
+  # Oracle Cloud DNS
   networking.nameservers = [ "10.0.0.1" ];
 
+  # SSH server
   services.openssh = {
     enable = true;
     settings = {
@@ -33,57 +38,52 @@ in
     };
   };
 
+  # Root user with SSH access
   users.users.root = {
     openssh.authorizedKeys.keys = [
-      # Add your SSH keys here
+      # Add your SSH public keys here
     ];
   };
 
+  # Create nixos user
   users.users.nixos = {
     isNormalUser = true;
-    extraGroups = [ "wheel" "docker" ];
+    extraGroups = [ "wheel" ];
     openssh.authorizedKeys.keys = [
-      # Add your SSH keys here
+      # Add your SSH public keys here
     ];
   };
 
+  # Sudo without password
   security.sudo.wheelNeedsPassword = false;
 
-  environment.systemPackages = with pkgs; [
-    vim
-    curl
-    git
-    htop
-  ];
-
-  # Enable Docker for container workloads
-  virtualisation.docker = {
-    enable = true;
-    autoPrune = {
-      enable = true;
-      dates = "weekly";
-      flags = [ "--all" ];
-    };
-  };
-
-  # Enable automatic updates
-  system.autoUpgrade.enable = true;
-  system.autoUpgrade.allowReboot = true;
-
-  # Boot configuration
-  boot.loader.grub = {
-    enable = true;
-    device = "/dev/sda";
-    efiSupport = true;
-    efiInstallAsRemovable = true;
-  };
-
+  # File systems - btrfs
   fileSystems."/" = {
     device = "/dev/disk/by-label/nixos";
     fsType = "btrfs";
   };
 
-  swapDevices = [
-    { device = "/dev/disk/by-label/swap"; }
+  fileSystems."/boot" = {
+    device = "/dev/disk/by-uuid/*";
+    fsType = "vfat";
+  };
+
+  # Basic packages
+  environment.systemPackages = with pkgs; [
+    vim
+    curl
+    git
+    htop
+    wget
   ];
+
+  # Enable flakes
+  nix.settings.experimental-features = [ "nix-command" "flakes" ];
+
+  # Automatic garbage collection
+  nix.gc.automatic = true;
+  nix.gc.dates = "weekly";
+
+  # Systemd timer for auto-updates (optional)
+  systemd.timesyncd.enable = true;
 }

@@ -7,61 +7,51 @@
     };
   };
 
-  outputs = { self, nixpkgs, disko }: {
-    packages.aarch64-linux.nixos-anywhere-installer = nixpkgs.lib.nixosSystem {
-      system = "aarch64-linux";
-      modules = [
-        disko.nixosModules.disko
-        {
-          disko.devices = {
-            disk = {
-              device = "/dev/sda";
-              type = "disk";
-              partitionTableType = "gpt";
-              content = {
-                type = "gpt";
-                partitions = {
-                  boot = {
-                    size = "1M";
-                    type = "EF00";
-                    content = {
-                      type = "filesystem";
-                      format = "vfat";
-                      mountpoint = "/boot/efi";
+  outputs = { self, nixpkgs, disko }:
+    let
+      target-ip = if (builtins.hasAttr "target_ip" specialArgs) then specialArgs.target_ip else "10.0.0.2";
+    in
+    {
+      packages.aarch64-linux.nixos-anywhere-installer = nixpkgs.lib.nixosSystem {
+        system = "aarch64-linux";
+        modules = [
+          disko.nixosModules.disko
+          {
+            disko.devices = {
+              disk = {
+                device = "/dev/sda";
+                type = "disk";
+                partitionTableType = "gpt";
+                content = {
+                  type = "gpt";
+                  partitions = {
+                    esp = {
+                      size = "512M";
+                      type = "EF00";
+                      content = {
+                        type = "filesystem";
+                        format = "vfat";
+                        mountpoint = "/boot";
+                      };
                     };
-                  };
-                  root = {
-                    size = "100%";
-                    content = {
-                      type = "lvms";
-                      logicalVolumes = {
-                        swap = {
-                          size = "8G";
-                          type = "swap";
-                          swap.swapChance = 1;
-                          swap.swapPriority = 1;
-                        };
-                        root = {
-                          size = "100%";
-                          type = "linux";
-                          content = {
-                            type = "btrfs";
-                            extraArgs = [ "-L" "nixos" ];
-                            subvolumes = {
-                              "/root" = {
-                                mountpoint = "/";
-                              };
-                              "/home" = {
-                                mountpoint = "/home";
-                              };
-                              "/nix" = {
-                                mountpoint = "/nix/store";
-                                mountOptions = [ "noatime" ];
-                              };
-                              "/var/log" = {
-                                mountpoint = "/var/log";
-                              };
-                            };
+                    root = {
+                      size = "100%";
+                      content = {
+                        type = "btrfs";
+                        extraArgs = [ "-L" "nixos" ];
+                        subvolumes = {
+                          "/root" = {
+                            mountpoint = "/";
+                          };
+                          "/home" = {
+                            mountpoint = "/home";
+                          };
+                          "/nix" = {
+                            mountpoint = "/nix/store";
+                            mountOptions = [ "noatime" ];
+                          };
+                          "/var/log" = {
+                            mountpoint = "/var/log";
                           };
                         };
                       };
@@ -70,10 +60,10 @@
                 };
               };
             };
-          };
-        }
-        ./configuration.nix
-      ];
+          }
+          ./configuration.nix
+          { _module.args = { inherit target-ip; }; }
+        ];
+      };
     };
-  };
 }
