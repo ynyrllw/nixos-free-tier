@@ -2,11 +2,6 @@ name: Destroy NixOS Instance
 
 on:
   workflow_dispatch:
-    inputs:
-      bucket_name:
-        description: 'Bucket name (e.g., nixos-images-20260318)'
-        required: false
-        default: 'nixos-images'
 
 jobs:
   destroy:
@@ -16,29 +11,52 @@ jobs:
 
       - name: Setup Terraform
         uses: hashicorp/setup-terraform@v3
+        with:
+          terraform_version: 1.12.0
 
-      - name: Configure Terraform
+      - name: Install OCI CLI
+        run: |
+          bash -c "$(curl -L https://raw.githubusercontent.com/oracle/oci-cli/master/scripts/install/install.sh)" -- --accept-all-defaults
+          echo "$HOME/bin" >> $GITHUB_PATH
+
+      - name: Configure and Destroy
         working-directory: terraform
         env:
-          TENANCY_OCID: ${{ vars.TENANCY_OCID }}
-          COMPARTMENT_OCID: ${{ vars.COMPARTMENT_OCID }}
-          REGION: ${{ vars.REGION }}
-          SUBNET_ID: ${{ vars.SUBNET_ID }}
+          OCI_TENANCY_OCID: ${{ vars.OCI_TENANCY_OCID }}
+          OCI_USER_OCID: ${{ vars.OCI_USER_OCID }}
+          OCI_FINGERPRINT: ${{ vars.OCI_FINGERPRINT }}
+          OCI_REGION: ${{ vars.OCI_REGION }}
+          OCI_PRIVATE_KEY: ${{ secrets.OCI_PRIVATE_KEY }}
           SSH_PUBLIC_KEY: ${{ vars.SSH_PUBLIC_KEY }}
         run: |
-          REGION_VAL="${REGION:-}"
-          SUBNET_ID_VAL="${SUBNET_ID:-}"
-          BUCKET_NAME="${{ github.event.inputs.bucket_name || 'nixos-images' }}"
-          cat > terraform.tfvars << 'ENDOFFILE'
-          tenancy_ocid = "$TENANCY_OCID"
-          compartment_ocid = "$COMPARTMENT_OCID"
-          region = "$REGION_VAL"
-          subnet_id = "$SUBNET_ID_VAL"
+          export PATH="$HOME/bin:$PATH"
+          export OCI_CLI_SUPPRESS_FILE_PERMISSIONS_WARNING=True
+          
+          echo "$OCI_PRIVATE_KEY" > /tmp/oci_private_key
+          chmod 600 /tmp/oci_private_key
+          
+          mkdir -p ~/.oci
+          cat > ~/.oci/config << EOF
+          [DEFAULT]
+          user=$OCI_USER_OCID
+          fingerprint=$OCI_FINGERPRINT
+          key_file=/tmp/oci_private_key
+          tenancy=$OCI_TENANCY_OCID
+          region=$OCI_REGION
+          EOF
+          chmod 600 ~/.oci/config
+          
+          # Write terraform vars
+          cat > terraform.tfvars << EOF
+          tenancy_ocid = "$OCI_TENANCY_OCID"
+          user_ocid = "$OCI_USER_OCID"
+          fingerprint = "$OCI_FINGERPRINT"
+          private_key_path = "/tmp/oci_private_key"
+          compartment_ocid = "$OCI_TENANCY_OCID"
+          region = "$OCI_REGION"
           ssh_public_key = "$SSH_PUBLIC_KEY"
-          bucket_name = "$BUCKET_NAME"
-          ENDOFFILE
+          ssh_private_key_path = "/tmp/oci_private_key"
+          EOF
+          
           terraform init
-
-      - name: Destroy Terraform
-        working-directory: terraform
-        run: terraform destroy -auto-approve
+          terraform destroy -auto-approve

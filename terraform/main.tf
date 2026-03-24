@@ -8,8 +8,10 @@ terraform {
   }
 
   backend "oci" {
-    bucket = "terraform-state"
-    key    = "nixos-deploy/terraform.tfstate"
+    bucket    = "terraform-state"
+    namespace = "zr4kpvluldho"
+    key       = "nixos-deploy/terraform.tfstate"
+    region    = "eu-zurich-1"
   }
 }
 

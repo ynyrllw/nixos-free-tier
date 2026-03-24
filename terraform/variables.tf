@@ -43,7 +43,7 @@ variable "bucket_name" {
 variable "subnet_id" {
   description = "OCID of existing subnet to deploy to (optional, creates new VCN/subnet if empty)"
   type        = string
-  default     = "ocid1.subnet.oc1.eu-zurich-1.aaaaaaaahizsa2itiriwt2if65b22i2bls2ukbpxdd6ir7hyjtll5hynn6aa"
+  default     = ""
 }
 
 variable "image_source" {
@@ -84,25 +84,25 @@ variable "cloud_init_user_data" {
 variable "vcn_id" {
   description = "VCN OCID (for importing existing resources)"
   type        = string
-  default     = "ocid1.vcn.oc1.eu-zurich-1.amaaaaaalg3cyzqaecpmbsxeadjkr2vtqasa46fyzfezexkeltuaiq7wnoba"
+  default     = ""
 }
 
 variable "ig_id" {
   description = "Internet Gateway OCID (for importing existing resources)"
   type        = string
-  default     = "ocid1.internetgateway.oc1.eu-zurich-1.aaaaaaaagieirwccytkpwsynqfrdb5kg3wxdo4hle5uacbebjs7u2hoyjsja"
+  default     = ""
 }
 
 variable "rt_id" {
   description = "Route Table OCID (for importing existing resources)"
   type        = string
-  default     = "ocid1.routetable.oc1.eu-zurich-1.aaaaaaaaq3yfcyyaqwl4dg5yhezzawoovhqbxyzykwrxtjojfcrrplnw4uaa"
+  default     = ""
 }
 
 variable "sl_id" {
   description = "Security List OCID (for importing existing resources)"
   type        = string
-  default     = "ocid1.securitylist.oc1.eu-zurich-1.aaaaaaaagcin5m6qm5kohapsn574c4r7f2utzadvrtabqrb3ujngaringkwq"
+  default     = ""
 }
 
 variable "image_id" {

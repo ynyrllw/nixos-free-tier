@@ -84,11 +84,11 @@ jobs:
           # Create bucket for terraform state if it doesn't exist
           if ! oci os bucket get --name terraform-state --compartment-id $OCI_TENANCY_OCID &>/dev/null; then
             echo "Creating terraform-state bucket..."
-            oci os bucket create --compartment-id $OCI_TENANCY_OCID --name terraform-state --visibility Private
+            oci os bucket create --compartment-id $OCI_TENANCY_OCID --name terraform-state --namespace-name zr4kpvluldho
           fi
           
-          # Init and apply
-          terraform init
+          # Init and apply (OCI backend uses env vars)
+          terraform init -force-copy
           terraform apply -auto-approve
 
       - name: Install NixOS via nixos-anywhere
@@ -104,6 +104,7 @@ jobs:
           
           nix run github:nix-community/nixos-anywhere -- \
             --flake ./nix-image#aarch64-linux \
+            --ssh-option User=ubuntu \
             root@$INSTANCE_IP
         env:
           OCI_PRIVATE_KEY: ${{ secrets.OCI_PRIVATE_KEY }}
