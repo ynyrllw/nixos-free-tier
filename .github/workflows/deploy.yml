@@ -104,7 +104,10 @@ jobs:
           
           nix run github:nix-community/nixos-anywhere -- \
             --flake ./nix-image#aarch64-linux \
+            -i /tmp/oci_private_key \
             --ssh-option User=ubuntu \
+            --ssh-option IdentityAgent=none \
+            --no-copy-host-keys \
             root@$INSTANCE_IP
         env:
           OCI_PRIVATE_KEY: ${{ secrets.OCI_PRIVATE_KEY }}
