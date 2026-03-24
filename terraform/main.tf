@@ -20,17 +20,25 @@ data "oci_identity_availability_domains" "ads" {
   compartment_id = var.tenancy_ocid
 }
 
-data "oci_core_images" "ubuntu" {
-  compartment_id           = var.tenancy_ocid
-  operating_system         = "Canonical Ubuntu"
-  operating_system_version = "24.04"
+variable "ubuntu_image_id" {
+  description = "Ubuntu 24.04 ARM64 image OCID"
+  type        = string
+  default     = "ocid1.image.oc1.eu-zurich-1.aaaaaaaagt4fin33bgwrmpianub6pdwog5g27fxyg3vwwwztwidvc2g4knqa"
+}
 
-  sort_by    = "TIMECREATED"
-  sort_order = "DESC"
+resource "oci_core_instance" "nixos" {
+  compartment_id      = var.tenancy_ocid
+  availability_domain = data.oci_identity_availability_domains.ads.availability_domains[0].name
+  shape               = "VM.Standard.A1.Flex"
 
-  filter {
-    name   = "limit"
-    values = ["5"]
+  shape_config {
+    memory_in_gbs = var.memory_in_gbs
+    ocpus         = var.ocpus
+  }
+
+  source_details {
+    source_type = "image"
+    source_id   = var.ubuntu_image_id
   }
 }
 
