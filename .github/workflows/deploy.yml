@@ -35,6 +35,7 @@ jobs:
           echo "$HOME/bin" >> $GITHUB_PATH
 
       - name: Configure and Deploy
+        id: terraform
         working-directory: terraform
         env:
           OCI_TENANCY_OCID: ${{ vars.OCI_TENANCY_OCID }}
@@ -84,7 +85,20 @@ jobs:
           terraform init
           terraform apply -auto-approve
 
-      - name: Output instance IP
-        working-directory: terraform
+      - name: Install NixOS via nixos-anywhere
         run: |
-          echo "Instance IP: $(terraform output -raw instance_ip)"
+          export PATH="$HOME/bin:/nix/var/nix/profiles/default/bin:$PATH"
+          
+          # Restore SSH private key
+          echo "$OCI_PRIVATE_KEY" > /tmp/oci_private_key
+          chmod 600 /tmp/oci_private_key
+          
+          INSTANCE_IP=$(cd terraform && terraform output -raw instance_ip)
+          echo "Installing NixOS on $INSTANCE_IP"
+          
+          nix run github:nix-community/nixos-anywhere -- \
+            --disk-config ./nix-image/disko.nix \
+            --force-ephemeral \
+            -p root@$INSTANCE_IP
+        env:
+          OCI_PRIVATE_KEY: ${{ secrets.OCI_PRIVATE_KEY }}

@@ -101,24 +101,6 @@ resource "oci_core_instance" "nixos" {
   }
 }
 
-module "deploy" {
-  source = "github.com/nix-community/nixos-anywhere//terraform/all-in-one"
-
-  target_host = oci_core_instance.nixos.public_ip
-  instance_id = oci_core_instance.nixos.id
-
-  install_ssh_key = var.ssh_public_key
-
-  nixos_system_attr      = ".#nixosConfigurations.nixos.config.system.build.toplevel"
-  nixos_partitioner_attr = ".#nixosConfigurations.nixos.config.system.build.diskoNoDeps"
-
-  build_on_remote = true
-
-  special_args = {
-    target_ip = oci_core_instance.nixos.public_ip
-  }
-}
-
 output "instance_ip" {
   value = oci_core_instance.nixos.public_ip
 }
