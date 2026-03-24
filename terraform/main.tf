@@ -112,6 +112,8 @@ module "deploy" {
   nixos_system_attr      = ".#nixosConfigurations.nixos.config.system.build.toplevel"
   nixos_partitioner_attr = ".#nixosConfigurations.nixos.config.system.build.diskoNoDeps"
 
+  build_on_remote = true
+
   special_args = {
     target_ip = oci_core_instance.nixos.public_ip
   }
