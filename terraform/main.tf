@@ -26,22 +26,6 @@ variable "ubuntu_image_id" {
   default     = "ocid1.image.oc1.eu-zurich-1.aaaaaaaagt4fin33bgwrmpianub6pdwog5g27fxyg3vwwwztwidvc2g4knqa"
 }
 
-resource "oci_core_instance" "nixos" {
-  compartment_id      = var.tenancy_ocid
-  availability_domain = data.oci_identity_availability_domains.ads.availability_domains[0].name
-  shape               = "VM.Standard.A1.Flex"
-
-  shape_config {
-    memory_in_gbs = var.memory_in_gbs
-    ocpus         = var.ocpus
-  }
-
-  source_details {
-    source_type = "image"
-    source_id   = var.ubuntu_image_id
-  }
-}
-
 resource "oci_core_vcn" "nixos" {
   compartment_id = var.tenancy_ocid
   display_name   = "nixos-vcn"
@@ -104,7 +88,7 @@ resource "oci_core_instance" "nixos" {
 
   source_details {
     source_type = "image"
-    source_id   = data.oci_core_images.ubuntu.images[0].id
+    source_id   = var.ubuntu_image_id
   }
 
   create_vnic_details {
