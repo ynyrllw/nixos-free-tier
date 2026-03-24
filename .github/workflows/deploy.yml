@@ -81,6 +81,12 @@ jobs:
           ssh_private_key_path = "/tmp/oci_private_key"
           EOF
           
+          # Create bucket for terraform state if it doesn't exist
+          if ! oci os bucket get --name terraform-state --compartment-id $OCI_TENANCY_OCID &>/dev/null; then
+            echo "Creating terraform-state bucket..."
+            oci os bucket create --compartment-id $OCI_TENANCY_OCID --name terraform-state --visibility Private
+          fi
+          
           # Init and apply
           terraform init
           terraform apply -auto-approve

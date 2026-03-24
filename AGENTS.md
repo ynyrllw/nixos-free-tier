@@ -72,6 +72,28 @@ Check for hardcoded values that should be synced:
 - Variable names
 - Required vs optional variables
 
+## Terraform State Management
+
+**Always use the OCI native backend** for Terraform state (Terraform >= 1.12.0):
+```hcl
+terraform {
+  backend "oci" {
+    bucket = "terraform-state"
+    key    = "nixos-deploy/terraform.tfstate"
+  }
+}
+```
+
+Do NOT use the deprecated S3-compatible backend. See Oracle docs: https://docs.oracle.com/en-us/iaas/Content/API/SDKDocs/terraform.htm#Using_Object_Storage_for_State_Files
+
+## OCI Provider Usage
+
+When working with OCI Terraform resources:
+- Always check the official provider docs at https://registry.terraform.io/providers/oracle/oci/latest/docs
+- Many data sources (like oci_core_vcn, oci_core_subnet) don't require compartment_id - it comes from the provider config
+- Use import blocks carefully with count - they don't work together
+- Test with `terraform validate` before committing
+
 ## Managing Existing OCI Resources
 
 ### Prerequisites
