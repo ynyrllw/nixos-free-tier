@@ -29,13 +29,8 @@ data "oci_core_images" "ubuntu" {
   sort_order = "DESC"
 
   filter {
-    name   = "display_name"
-    values = [".*aarch64.*"]
-  }
-
-  filter {
     name   = "limit"
-    values = ["1"]
+    values = ["5"]
   }
 }
 
