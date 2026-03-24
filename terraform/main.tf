@@ -112,6 +112,10 @@ module "deploy" {
   nixos_system_attr      = ".#nixosConfigurations.nixos.config.system.build.toplevel"
   nixos_partitioner_attr = ".#nixosConfigurations.nixos.config.system.build.diskoNoDeps"
 
+  nix_options = {
+    "no-update-lock-file" = "true"
+  }
+
   special_args = {
     target_ip = oci_core_instance.nixos.public_ip
   }
