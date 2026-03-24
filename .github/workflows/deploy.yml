@@ -98,7 +98,7 @@ jobs:
           
           nix run github:nix-community/nixos-anywhere -- \
             --disk-config ./nix-image/disko.nix \
-            --force-ephemeral \
-            -p root@$INSTANCE_IP
+            --flake ./nix-image#nixosConfigurations.aarch64-linux.config.system.build.toplevel \
+            root@$INSTANCE_IP
         env:
           OCI_PRIVATE_KEY: ${{ secrets.OCI_PRIVATE_KEY }}
