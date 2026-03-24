@@ -97,8 +97,7 @@ jobs:
           echo "Installing NixOS on $INSTANCE_IP"
           
           nix run github:nix-community/nixos-anywhere -- \
-            --disk-config ./nix-image/disko.nix \
-            --flake ./nix-image#nixosConfigurations.aarch64-linux.config.system.build.toplevel \
+            --flake ./nix-image#aarch64-linux \
             root@$INSTANCE_IP
         env:
           OCI_PRIVATE_KEY: ${{ secrets.OCI_PRIVATE_KEY }}
