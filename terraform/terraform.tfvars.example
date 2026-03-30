@@ -1,17 +1,14 @@
 # Copy this file to terraform.tfvars and fill in your values
 
 tenancy_ocid     = "ocid1.tenancy.oc1..aaaa..."
+user_ocid        = "ocid1.user.oc1..aaaa..."
+fingerprint      = "aa:bb:cc:..."
+private_key_path = "~/.oci/oci_api_key.pem"
 ssh_public_key   = "ssh-ed25519 AAAA..."
 
-# Optional - auto-detected if empty:
-# compartment_ocid = "ocid1.compartment.oc1..aaaa..."
-# region           = "eu-zurich-1"
-# subnet_id        = "ocid1.subnet.oc1..aaaa..."
-# bucket_name      = "nixos-images"
-
-# Free tier limits: 1-4 OCPUs, 6-24 GB RAM
-# ocpus         = 4
-# memory_in_gbs = 24
-
-# Optional: cloud-init user data
-# cloud_init_user_data = ""
+# Optional - defaults work out of the box:
+# region        = "eu-zurich-1"
+# subnet_id     = ""  # Creates new VCN if empty
+# vcn_id        = ""  # Creates new VCN if empty
+# ocpus         = 4   # Free tier: 1-4 OCPUs
+# memory_in_gbs = 24  # Free tier: 6-24 GB

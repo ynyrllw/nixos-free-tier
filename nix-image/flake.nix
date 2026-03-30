@@ -11,16 +11,17 @@
 
   outputs = { self, nixpkgs, disko }: {
     nixosConfigurations = {
-      aarch64-linux = nixpkgs.lib.nixosSystem {
+      oci = nixpkgs.lib.nixosSystem {
         system = "aarch64-linux";
         modules = [
+          "${nixpkgs}/nixos/modules/virtualisation/oci-image.nix"
           disko.nixosModules.disko
           ./configuration.nix
-          {
-            disko.device = "/dev/sda";
-          }
         ];
       };
     };
+
+    packages.aarch64-linux.default =
+      self.nixosConfigurations.oci.config.system.build.OCIImage;
   };
 }

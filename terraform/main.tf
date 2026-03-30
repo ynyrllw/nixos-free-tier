@@ -28,8 +28,35 @@ data "oci_identity_availability_domains" "ads" {
 }
 
 locals {
-  use_existing_vcn = var.vcn_id != ""
-  ubuntu_image_id  = "ocid1.image.oc1.eu-zurich-1.aaaaaaaagt4fin33bgwrmpianub6pdwog5g27fxyg3vwwwztwidvc2g4knqa"
+  use_existing_vcn      = var.vcn_id != ""
+  oracle_linux_image_id = "ocid1.image.oc1.eu-zurich-1.aaaaaaaa3hpmxqnqzna6tz6yrgyqapdzhbpskvox7robjh6si2qohkedd6qq"
+
+  # Cloud-init user-data to run nixos-infect
+  user_data = <<-EOF
+    #cloud-config
+    runcmd:
+      - |
+        # Add SSH key for root user
+        mkdir -p /root/.ssh
+        echo "${var.ssh_public_key}" > /root/.ssh/authorized_keys
+        chmod 700 /root/.ssh
+        chmod 600 /root/.ssh/authorized_keys
+        
+        # Expand partition to fill the 100GB disk before nixos-infect
+        echo ',+' | sfdisk -N 3 --no-reread /dev/sda || true
+        partx -u /dev/sda || true
+        pvresize /dev/sda3 || true
+        lvextend -l +100%FREE /dev/mapper/ocivolume-root || true
+        xfs_growfs /dev/mapper/ocivolume-root || true
+        
+        # Remove Oracle oled partition and extend root to use full disk
+        lvremove -f /dev/ocivolume/oled || true
+        lvextend -l +100%FREE /dev/mapper/ocivolume-root || true
+        xfs_growfs /dev/mapper/ocivolume-root || true
+        
+        # Run nixos-infect in background (can take 10-15 minutes)
+        (curl https://raw.githubusercontent.com/elitak/nixos-infect/master/nixos-infect | NIX_CHANNEL=${var.nix_channel} bash -x &) &> /var/log/nixos-infect.log
+  EOF
 }
 
 data "oci_core_vcn" "existing" {
@@ -114,8 +141,10 @@ resource "oci_core_instance" "nixos" {
   }
 
   source_details {
-    source_type = "image"
-    source_id   = var.image_id != "" ? var.image_id : local.ubuntu_image_id
+    source_type             = "image"
+    source_id               = local.oracle_linux_image_id
+    boot_volume_size_in_gbs = 100
+    boot_volume_vpus_per_gb = 10
   }
 
   create_vnic_details {
@@ -123,8 +152,14 @@ resource "oci_core_instance" "nixos" {
     assign_public_ip = true
   }
 
+  launch_options {
+    network_type     = "PARAVIRTUALIZED"
+    boot_volume_type = "PARAVIRTUALIZED"
+  }
+
   metadata = {
     ssh_authorized_keys = var.ssh_public_key
+    user_data           = base64encode(local.user_data)
   }
 }
 

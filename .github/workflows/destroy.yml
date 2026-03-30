@@ -52,10 +52,8 @@ jobs:
           user_ocid = "$OCI_USER_OCID"
           fingerprint = "$OCI_FINGERPRINT"
           private_key_path = "/tmp/oci_private_key"
-          compartment_ocid = "$OCI_TENANCY_OCID"
           region = "$OCI_REGION"
           ssh_public_key = "$SSH_PUBLIC_KEY"
-          ssh_private_key_path = "/tmp/oci_private_key"
           EOF
           
           terraform init

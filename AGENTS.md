@@ -44,15 +44,16 @@ When adding new features or variables, prioritize this philosophy:
 
 ## Key Files
 
-- `.github/workflows/deploy.yml` - GitHub Actions workflow (downloads pre-built image + deploy)
-- `terraform/` - Terraform configuration for OCI
+- `terraform/main.tf` - Terraform configuration (deploys Oracle Linux 8 ARM + VCN)
+- `terraform/variables.tf` - Terraform variables
 
 ## How It Works
 
-1. Downloads pre-built NixOS ARM image from nix-community releases
-2. Terraform uploads and imports the image to OCI
-3. Deploys an ARM VM using the imported image
-4. User SSHes in and applies their own flake via `nixos-rebuild switch`
+1. Terraform deploys Oracle Linux 8 ARM instance
+2. User SSHes in and runs nixos-infect
+3. User applies their own flake via `nixos-rebuild switch`
+
+This is simpler than the old approach (custom image upload) and more reliable.
 
 ## Testing Changes
 
@@ -175,3 +176,71 @@ If ARM instance creation fails with capacity errors:
 1. Upgrade to Pay As You Go for priority capacity access
 2. Set up $0 budget alert in Billing → Budgets to avoid charges
 3. The free tier allows 4 OCPUs / 24GB RAM (3000 OCPU hours/month) - running continuously stays under limit
+
+## Deployment Approaches Tested
+
+### Approach 1: nixos-infect (Recommended)
+
+The simplest approach - use [nixos-infect](https://github.com/elitak/nixos-infect) to convert an existing Oracle Linux VM to NixOS:
+
+```bash
+# On Oracle Linux instance
+curl https://raw.githubusercontent.com/elitak/nixos-infect/master/nixos-infect | NIX_CHANNEL=nixos-24.05 bash -x
+```
+
+**Tested and working on:**
+- Oracle Linux 8.10 (aarch64) ✅
+- Ubuntu 22.04 (aarch64) ✅
+- Oracle Linux 9.1 (aarch64) ✅
+
+**Advantages:**
+- No custom image building required
+- Works on any Oracle-supported Linux distro
+- Single command installation
+
+**Disadvantages:**
+- Requires console access to handle reboot (MaxStartups SSH issue)
+
+### Approach 2: Custom Image with Terraform
+
+Build a NixOS image locally (requires ARM hardware or binfmt emulation), then upload via Terraform.
+
+**Requirements:**
+- ARM hardware (Mac M1+, Raspberry Pi, etc.) OR
+- binfmt emulation on x86_64 (very slow - hours to days)
+
+**Steps:**
+1. Build image with `nix build .#packages.aarch64-linux.default`
+2. Upload to OCI Object Storage via Terraform
+3. Import as custom image
+4. Register shape compatibility
+5. Deploy instance
+
+### Approach 3: nixos-anywhere / kexec (Does NOT work)
+
+**kexec fails on Oracle Cloud ARM** - After kexec-based installation, the machine reboots but becomes unreachable. This is a known limitation:
+- The Oracle Cloud ARM instances don't properly reinitialize networking after kexec
+- OCI shows instance as RUNNING but network is unreachable
+
+### Approach 4: netboot.xyz (Not tested)
+
+Michael Lynch's method uses netboot.xyz EFI boot to run the NixOS installer:
+1. Download netboot.xyz-arm64.efi to /boot/efi/
+2. Boot into EFI shell via Oracle Console
+3. Load netboot.xyz and select NixOS installer
+4. Run disko + nixos-install
+
+This should work but requires manual console interaction.
+
+## Current Deployment Method
+
+The recommended approach for automation:
+
+1. **Create Oracle Linux 8 ARM instance** via OCI Console or Terraform
+2. **Use nixos-infect** to convert to NixOS (run via cloud-init or SSH)
+3. **Apply custom flake** via nixos-rebuild
+
+This approach:
+- Doesn't require building custom images
+- Works with Oracle's provided base images
+- Can be automated via cloud-init user data

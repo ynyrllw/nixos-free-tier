@@ -19,13 +19,7 @@ variable "fingerprint" {
 variable "private_key_path" {
   description = "Path to private key"
   type        = string
-  default     = "/tmp/oci_private_key"
-}
-
-variable "compartment_ocid" {
-  description = "Compartment OCID (defaults to tenancy_ocid if empty)"
-  type        = string
-  default     = ""
+  default     = "~/.oci/oci_api_key.pem"
 }
 
 variable "region" {
@@ -34,22 +28,16 @@ variable "region" {
   default     = "eu-zurich-1"
 }
 
-variable "bucket_name" {
-  description = "Object Storage Bucket Name for NixOS image"
-  type        = string
-  default     = "nixos-images"
-}
-
 variable "subnet_id" {
   description = "OCID of existing subnet to deploy to (optional, creates new VCN/subnet if empty)"
   type        = string
   default     = ""
 }
 
-variable "image_source" {
-  description = "Path to the NixOS qcow2 image"
+variable "vcn_id" {
+  description = "VCN OCID (optional, creates new VCN if empty)"
   type        = string
-  default     = "./nixos-aarch64.qcow2"
+  default     = ""
 }
 
 variable "ocpus" {
@@ -69,50 +57,20 @@ variable "ssh_public_key" {
   type        = string
 }
 
-variable "ssh_private_key_path" {
-  description = "Path to SSH private key for deployment"
-  type        = string
-  default     = "/tmp/oci_private_key"
-}
-
-variable "cloud_init_user_data" {
-  description = "Cloud-init user data (optional)"
-  type        = string
-  default     = ""
-}
-
-variable "vcn_id" {
-  description = "VCN OCID (for importing existing resources)"
-  type        = string
-  default     = ""
-}
-
-variable "ig_id" {
-  description = "Internet Gateway OCID (for importing existing resources)"
-  type        = string
-  default     = ""
-}
-
-variable "rt_id" {
-  description = "Route Table OCID (for importing existing resources)"
-  type        = string
-  default     = ""
-}
-
-variable "sl_id" {
-  description = "Security List OCID (for importing existing resources)"
-  type        = string
-  default     = ""
-}
-
-variable "image_id" {
-  description = "Image OCID (for importing existing resources)"
-  type        = string
-  default     = ""
-}
-
 variable "instance_id" {
   description = "Instance OCID (for importing existing resources)"
+  type        = string
+  default     = ""
+}
+
+variable "nix_channel" {
+  description = "NixOS channel to use (e.g., nixos-24.05, nixos-unstable)"
+  type        = string
+  default     = "nixos-24.05"
+}
+
+variable "ssh_private_key" {
+  description = "SSH private key content for nixos-infect to add to authorized_keys"
   type        = string
   default     = ""
 }
