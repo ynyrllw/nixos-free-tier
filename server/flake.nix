@@ -1,8 +1,8 @@
 {
-  description = "NixOS server configuration with stalwart and neovim";
+  description = "Minimal NixOS flake for Oracle Cloud A1 (ARM free tier)";
 
   inputs = {
-    nixpkgs.url = "github:NixOS/nixpkgs/nixos-25.05";
+    nixpkgs.url = "github:NixOS/nixpkgs/nixos-25.11";
   };
 
   outputs = { self, nixpkgs }: {

@@ -41,15 +41,15 @@ variable "vcn_id" {
 }
 
 variable "ocpus" {
-  description = "Number of OCPUs (1-4 for free tier)"
+  description = "Number of OCPUs (1-2 for free tier)"
   type        = number
-  default     = 4
+  default     = 2
 }
 
 variable "memory_in_gbs" {
-  description = "Memory in GB (6-24 for free tier A1.Flex)"
+  description = "Memory in GB (6-12 for free tier A1.Flex)"
   type        = number
-  default     = 24
+  default     = 12
 }
 
 variable "ssh_public_key" {
@@ -57,16 +57,10 @@ variable "ssh_public_key" {
   type        = string
 }
 
-variable "instance_id" {
-  description = "Instance OCID (for importing existing resources)"
-  type        = string
-  default     = ""
-}
-
 variable "nix_channel" {
-  description = "NixOS channel to use (e.g., nixos-24.05, nixos-unstable)"
+  description = "NixOS channel to use (e.g., nixos-25.11, nixos-unstable)"
   type        = string
-  default     = "nixos-24.05"
+  default     = "nixos-25.11"
 }
 
 variable "ssh_private_key" {

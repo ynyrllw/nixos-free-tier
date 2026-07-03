@@ -8,3 +8,4 @@ subnet_id        = ""
 vcn_id           = ""
 ocpus            = 4
 memory_in_gbs    = 24
+nix_channel      = "nixos-25.11"

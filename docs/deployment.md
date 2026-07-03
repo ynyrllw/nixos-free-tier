@@ -64,7 +64,7 @@ In your forked repo:
 
 1. Go to **Actions → Build and Deploy NixOS to Oracle Cloud**
 2. Click "Run workflow"
-3. Use default values (4 OCPUs, 24GB) or customize
+3. Use default values (2 OCPUs, 12GB) or customize
 4. Click "Run workflow"
 
 ## Step 5: Connect
@@ -85,8 +85,8 @@ ssh nixos@<IP>
 
 | Input | Default | Description |
 |-------|---------|-------------|
-| ocpus | 4 | OCPUs (1-4 for free tier) |
-| memory_gb | 24 | Memory in GB (6-24 for free tier) |
+| ocpus | 2 | OCPUs (1-2 for free tier) |
+| memory_gb | 12 | Memory in GB (6-12 for free tier) |
 
 ## Troubleshooting
 

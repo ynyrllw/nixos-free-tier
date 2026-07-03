@@ -4,6 +4,8 @@ This file provides guidance for AI agents working on this repository.
 
 ## Project Overview
 
+**Note for agents**: When working on any NixOS‑related task, always consult the official NixOS documentation (e.g. `nixos.org/manual` or the NixOS Wiki) for the most up‑to‑date package options and configuration options. This includes checking the package name, module options, and service definitions before adding or modifying Nix expressions.
+
 This repository automates deployment of NixOS to Oracle Cloud Free Tier (ARM A1.Flex instance) using GitHub Actions and Terraform.
 
 ## Design Philosophy
@@ -33,8 +35,8 @@ GitHub's free ARM runners don't support building custom NixOS ARM images (no KVM
   - `NAMESPACE` - Auto-detected from Object Storage API
 
 - **Optional variables with defaults**: Can be customized but work out of the box
-  - `ocpus` - Defaults to 4 (max free tier)
-  - `memory_in_gbs` - Defaults to 24 (max free tier)
+  - `ocpus` - Defaults to 2 (max free tier)
+  - `memory_in_gbs` - Defaults to 12 (max free tier)
   - `bucket_name` - Defaults to "nixos-images"
 
 When adding new features or variables, prioritize this philosophy:
@@ -50,8 +52,22 @@ When adding new features or variables, prioritize this philosophy:
 ## How It Works
 
 1. Terraform deploys Oracle Linux 8 ARM instance
-2. User SSHes in and runs nixos-infect
+2. Cloud-init (in `main.tf`) resizes the ESP to 1.1G and runs nixos-infect
 3. User applies their own flake via `nixos-rebuild switch`
+
+### Known pitfalls
+
+**Stale sda2 partition**: The cloud-init deletes sda2 and resizes sda1, but sda2
+is still mounted at `/boot` from the Oracle Linux boot. Without an explicit
+`umount /boot` before the `sgdisk` commands, the kernel retains a stale
+`/dev/sda2` that breaks `bootctl` and `grub-install` (both try to probe it and
+fail to find a GRUB drive mapping).  The fix (applied) is to unmount first,
+then `partx -d` the stale device, then re-read the partition table.
+
+**Empty LOCALE_ARCHIVE env**: `nixos-rebuild` passes `LOCALE_ARCHIVE` to
+`systemd-run -E`.  If the variable is empty (as it is during the first switch
+after nixos-infect), systemd rejects it: "Invalid environment block".  Work
+around: `LOCALE_ARCHIVE=/dummy nixos-rebuild switch`.
 
 This is simpler than the old approach (custom image upload) and more reliable.
 
@@ -75,17 +91,16 @@ Check for hardcoded values that should be synced:
 
 ## Terraform State Management
 
-**Always use the OCI native backend** for Terraform state (Terraform >= 1.12.0):
+Use a **local backend** by default:
 ```hcl
 terraform {
-  backend "oci" {
-    bucket = "terraform-state"
-    key    = "nixos-deploy/terraform.tfstate"
+  backend "local" {
+    path = "terraform.tfstate"
   }
 }
 ```
 
-Do NOT use the deprecated S3-compatible backend. See Oracle docs: https://docs.oracle.com/en-us/iaas/Content/API/SDKDocs/terraform.htm#Using_Object_Storage_for_State_Files
+For team deployments, consider using the OCI native backend (available in Terraform >= 1.12 or with the OCI provider plugin).
 
 ## OCI Provider Usage
 
@@ -175,7 +190,7 @@ Note: Deleting VCNs requires first deleting subnets, internet gateways, and rout
 If ARM instance creation fails with capacity errors:
 1. Upgrade to Pay As You Go for priority capacity access
 2. Set up $0 budget alert in Billing → Budgets to avoid charges
-3. The free tier allows 4 OCPUs / 24GB RAM (3000 OCPU hours/month) - running continuously stays under limit
+3. The free tier allows 2 OCPUs / 12GB RAM (1500 OCPU hours/month) - running continuously stays under limit
 
 ## Deployment Approaches Tested
 
@@ -185,7 +200,7 @@ The simplest approach - use [nixos-infect](https://github.com/elitak/nixos-infec
 
 ```bash
 # On Oracle Linux instance
-curl https://raw.githubusercontent.com/elitak/nixos-infect/master/nixos-infect | NIX_CHANNEL=nixos-24.05 bash -x
+curl https://raw.githubusercontent.com/elitak/nixos-infect/master/nixos-infect | NIX_CHANNEL=nixos-25.11 bash -x
 ```
 
 **Tested and working on:**
@@ -231,6 +246,102 @@ Michael Lynch's method uses netboot.xyz EFI boot to run the NixOS installer:
 4. Run disko + nixos-install
 
 This should work but requires manual console interaction.
+
+## OCI A1 Boot Chain (CRITICAL for flake authors)
+
+Understanding how OCI A1 boots is essential for writing a flake that survives reboot.
+
+### Boot order
+
+```
+BootCurrent: 0002
+Boot0002* UEFI ORACLE BlockVolume  PciRoot(0x0)/Pci(0x5,0x7)/Pci(0x0,0x0)/SCSI(0,1)
+```
+
+1. **Boot0002** loads a GRUB image from a **platform LUN** (not the ESP partition).
+2. This platform GRUB reads `grub.cfg` from `(hd0,gpt2)` (sda2 — the boot partition).
+3. The grub.cfg searches for sda2 by UUID (`search --fs-uuid`) and loads the NixOS kernel + initrd.
+4. The NixOS kernel mounts rootfs and runs systemd.
+
+The **ESP** (`Boot0005`, `/dev/sda1`) is only used if Boot0002 fails — it is a **fallback path** only.
+
+### What this means for flakes
+
+After `nixos-rebuild switch`, `install-grub.pl` writes a new `grub.cfg` to `/boot/`.
+If `fileSystems."/boot" = /dev/sda2`, this goes directly to sda2 where the
+platform LUN's GRUB can read it.  On a subsequent reboot:
+
+```
+Boot0002 → platform LUN GRUB → grub.cfg on sda2 → NixOS kernel + initrd → systemd
+```
+
+### Mandatory flake requirements for OCI A1
+
+Every flake that will run on OCI A1 **must** include these:
+
+```nix
+{ modulesPath, ... }: {
+  imports = [ (modulesPath + "/profiles/qemu-guest.nix") ];
+
+  boot.initrd.availableKernelModules = [ "virtio_blk" "virtio_pci" "virtio_net" ];
+  # NOT kernelModules — availableKernelModules probes hardware rather than
+  # force-loading.  Using kernelModules causes boot failures on OCI A1.
+
+  boot.kernelParams = [ "console=ttyAMA0,115200" "console=ttyS0,115200" ];
+}
+```
+
+Without `qemu-guest.nix` and `availableKernelModules`, the NixOS initrd may not
+discover the rootfs (`/dev/mapper/ocivolume-root`) and the system will hang
+after reboot.
+
+### Filesystem layout (post-nixos-infect)
+
+| Partition | Device | FSType | Mount |
+|---|---|---|---|
+| ESP | `/dev/sda1` | vfat | `/boot/efi` |
+| Boot | `/dev/sda2` | xfs | `/boot` |
+| Root (LVM LV) | `/dev/mapper/ocivolume-root` | xfs | `/` |
+
+Mount **all three** in your flake:
+
+```nix
+fileSystems."/" = {
+  device = "/dev/mapper/ocivolume-root";
+  fsType = "xfs";
+};
+fileSystems."/boot" = {
+  device = "/dev/sda2";
+  fsType = "xfs";
+};
+fileSystems."/boot/efi" = {
+  device = "/dev/sda1";
+  fsType = "vfat";
+};
+```
+
+Do **not** use `/dev/disk/by-label/` — those labels do not exist on OCI.
+
+### GRUB config on sda2 lifecycle
+
+`install-grub.pl` writes kernels + grub.cfg to sda2.  The platform LUN's GRUB
+reads this grub.cfg on every boot.  Additional `extraInstallCommands` are
+needed because:
+
+1. `install-grub.pl` runs via `systemd-run` in a separate mount namespace and
+   may write to rootfs `/boot/` (a directory) rather than sda2.
+2. The grub.cfg it creates references the rootfs UUID and `/boot/kernels/`
+   paths, but the boot partition has a different UUID and uses `/kernels/`.
+3. The ESP `BOOTAA64.EFI` (fallback boot) must be regenerated because
+   `grub-install` produces core images that hang on OCI A1 ARM64 firmware.
+
+See the `extraInstallCommands` in `nixos-flake/modules/default.nix` for a
+complete implementation.
+
+### Example flake
+
+The `server/` directory contains a minimal working flake template for OCI A1.
+Copy it to start your own NixOS configuration.
 
 ## Current Deployment Method
 
